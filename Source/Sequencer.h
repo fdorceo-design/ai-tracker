@@ -42,6 +42,16 @@ public:
     void setLoop(bool enabled, double startBeat, double endBeat);
     double getPositionBeats() const { return positionBeats.load(); }
 
+    // One MIDI track per distinct trackId present in `notes`, plus a tempo
+    // track set to the current BPM. Ticks-based (not SMPTE).
+    bool exportToMidiFile(const juce::File& file) const;
+
+    // Reads every track in the file and appends all of its notes, tagged
+    // with the given trackId. Absolute tempo from the file is ignored --
+    // notes land at the same beat positions they were written at, played
+    // back at this sequencer's own BPM. SMPTE-timed files are not supported.
+    bool importFromMidiFile(const juce::File& file, int trackId);
+
 private:
     void hiResTimerCallback() override;
     void allNotesOff();

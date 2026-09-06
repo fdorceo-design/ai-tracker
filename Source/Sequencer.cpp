@@ -1,6 +1,7 @@
 #include "Sequencer.h"
 #include <algorithm>
 #include <cmath>
+#include <set>
 
 Sequencer::Sequencer(AudioEngine& engineToUse) : engine(engineToUse)
 {
@@ -127,4 +128,94 @@ void Sequencer::hiResTimerCallback()
     }
 
     positionBeats = newPos;
+}
+
+bool Sequencer::exportToMidiFile(const juce::File& file) const
+{
+    constexpr short ticksPerQuarterNote = 960;
+
+    juce::MidiFile midiFile;
+    midiFile.setTicksPerQuarterNote(ticksPerQuarterNote);
+
+    juce::MidiMessageSequence tempoTrack;
+    tempoTrack.addEvent(juce::MidiMessage::tempoMetaEvent((int) (60000000.0 / bpm.load())), 0.0);
+    midiFile.addTrack(tempoTrack);
+
+    const auto snapshot = getNotes();
+
+    std::set<int> trackIds;
+    for (const auto& n : snapshot)
+        trackIds.insert(n.trackId);
+
+    for (auto trackId : trackIds)
+    {
+        juce::MidiMessageSequence trackSeq;
+        for (const auto& n : snapshot)
+        {
+            if (n.trackId != trackId)
+                continue;
+
+            const double startTicks = n.startBeat * ticksPerQuarterNote;
+            const double endTicks = (n.startBeat + n.lengthBeats) * ticksPerQuarterNote;
+
+            trackSeq.addEvent(juce::MidiMessage::noteOn(1, n.pitch, n.velocity), startTicks);
+            trackSeq.addEvent(juce::MidiMessage::noteOff(1, n.pitch), endTicks);
+        }
+        trackSeq.updateMatchedPairs();
+        trackSeq.sort();
+        midiFile.addTrack(trackSeq);
+    }
+
+    file.deleteFile();
+    std::unique_ptr<juce::FileOutputStream> stream(file.createOutputStream());
+    if (stream == nullptr)
+        return false;
+
+    return midiFile.writeTo(*stream);
+}
+
+bool Sequencer::importFromMidiFile(const juce::File& file, int trackId)
+{
+    juce::MidiFile midiFile;
+    std::unique_ptr<juce::FileInputStream> stream(file.createInputStream());
+    if (stream == nullptr || !midiFile.readFrom(*stream))
+        return false;
+
+    if (midiFile.getTimeFormat() <= 0)
+        return false; // SMPTE-timed files are not supported in this v1 importer.
+
+    const auto ticksPerQuarterNote = (double) midiFile.getTimeFormat();
+
+    std::lock_guard<std::mutex> lock(noteMutex);
+
+    for (int t = 0; t < midiFile.getNumTracks(); ++t)
+    {
+        juce::MidiMessageSequence seq(*midiFile.getTrack(t));
+        seq.updateMatchedPairs();
+
+        for (int i = 0; i < seq.getNumEvents(); ++i)
+        {
+            auto* holder = seq.getEventPointer(i);
+            if (!holder->message.isNoteOn())
+                continue;
+
+            auto* offHolder = holder->noteOffObject;
+            if (offHolder == nullptr)
+                continue;
+
+            const double startBeat = holder->message.getTimeStamp() / ticksPerQuarterNote;
+            const double endBeat = offHolder->message.getTimeStamp() / ticksPerQuarterNote;
+
+            SequencerNote n;
+            n.id = nextId++;
+            n.trackId = trackId;
+            n.pitch = holder->message.getNoteNumber();
+            n.velocity = holder->message.getFloatVelocity();
+            n.startBeat = startBeat;
+            n.lengthBeats = juce::jmax(0.001, endBeat - startBeat);
+            notes.push_back(n);
+        }
+    }
+
+    return true;
 }

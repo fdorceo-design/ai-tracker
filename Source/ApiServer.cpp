@@ -254,6 +254,60 @@ bool ApiServer::start(int portToUse)
         sendOk(res, true);
     });
 
+    server->Post("/api/export/midi", [this](const httplib::Request& req, httplib::Response& res)
+    {
+        auto parsed = juce::JSON::parse(juce::String(req.body));
+        auto path = parsed.getProperty("path", juce::var()).toString();
+        if (path.isEmpty())
+        {
+            auto* obj = new juce::DynamicObject();
+            obj->setProperty("ok", false);
+            obj->setProperty("error", "missing 'path'");
+            sendJson(res, juce::var(obj), 400);
+            return;
+        }
+
+        const bool ok = sequencer.exportToMidiFile(juce::File(path));
+        auto* obj = new juce::DynamicObject();
+        obj->setProperty("ok", ok);
+        if (!ok)
+            obj->setProperty("error", "failed to write MIDI file");
+        sendJson(res, juce::var(obj), ok ? 200 : 500);
+    });
+
+    server->Post("/api/import/midi", [this](const httplib::Request& req, httplib::Response& res)
+    {
+        auto parsed = juce::JSON::parse(juce::String(req.body));
+        auto path = parsed.getProperty("path", juce::var()).toString();
+        const int trackId = (int) parsed.getProperty("trackId", 0);
+
+        if (path.isEmpty())
+        {
+            auto* obj = new juce::DynamicObject();
+            obj->setProperty("ok", false);
+            obj->setProperty("error", "missing 'path'");
+            sendJson(res, juce::var(obj), 400);
+            return;
+        }
+
+        const auto knownTracks = engine.getTrackIds();
+        if (std::find(knownTracks.begin(), knownTracks.end(), trackId) == knownTracks.end())
+        {
+            auto* obj = new juce::DynamicObject();
+            obj->setProperty("ok", false);
+            obj->setProperty("error", "unknown trackId");
+            sendJson(res, juce::var(obj), 400);
+            return;
+        }
+
+        const bool ok = sequencer.importFromMidiFile(juce::File(path), trackId);
+        auto* obj = new juce::DynamicObject();
+        obj->setProperty("ok", ok);
+        if (!ok)
+            obj->setProperty("error", "failed to read MIDI file (missing, unreadable, or SMPTE-based)");
+        sendJson(res, juce::var(obj), ok ? 200 : 500);
+    });
+
     serverThread = std::thread([this]
     {
         server->listen("127.0.0.1", port);
