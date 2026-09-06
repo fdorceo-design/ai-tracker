@@ -14,6 +14,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(JUCE)
 
+FetchContent_Declare(
+    httplib
+    GIT_REPOSITORY https://github.com/yhirose/cpp-httplib.git
+    GIT_TAG v0.18.3
+    GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(httplib)
+
 juce_add_gui_app(AiTracker
     PRODUCT_NAME "AI Tracker"
     COMPANY_NAME "AiTracker"
@@ -23,6 +31,8 @@ target_sources(AiTracker PRIVATE
     Source/Main.cpp
     Source/MainComponent.cpp
     Source/PluginHost.cpp
+    Source/Sequencer.cpp
+    Source/ApiServer.cpp
 )
 
 target_compile_definitions(AiTracker PRIVATE
@@ -41,4 +51,9 @@ target_link_libraries(AiTracker PRIVATE
     juce::juce_recommended_config_flags
     juce::juce_recommended_lto_flags
     juce::juce_recommended_warning_flags
+    httplib::httplib
 )
+
+if (WIN32)
+    target_link_libraries(AiTracker PRIVATE ws2_32)
+endif()

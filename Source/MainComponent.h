@@ -2,6 +2,8 @@
 
 #include <juce_gui_extra/juce_gui_extra.h>
 #include "PluginHost.h"
+#include "Sequencer.h"
+#include "ApiServer.h"
 
 class MainComponent : public juce::Component,
                        private juce::Timer
@@ -16,15 +18,22 @@ public:
 private:
     void loadPluginClicked();
     void testNoteClicked();
+    void addDemoNotesClicked();
     void timerCallback() override;
 
     PluginHost pluginHost;
+    Sequencer sequencer { pluginHost };
+    ApiServer apiServer { pluginHost, sequencer };
 
     juce::Label titleLabel;
     juce::TextButton loadButton{"Load VST3..."};
     juce::TextButton editorButton{"Open Editor"};
     juce::TextButton testNoteButton{"Test Note (C4)"};
+    juce::TextButton demoNotesButton{"Add Demo Notes"};
+    juce::TextButton playButton{"Play"};
+    juce::TextButton stopButton{"Stop"};
     juce::Label statusLabel;
+    juce::Label apiLabel;
 
     std::unique_ptr<juce::FileChooser> fileChooser;
     bool noteIsOn = false;

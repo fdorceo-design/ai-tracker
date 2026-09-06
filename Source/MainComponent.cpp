@@ -4,11 +4,12 @@ namespace
 {
     constexpr int midiChannel = 1;
     constexpr int testNoteNumber = 60; // C4
+    constexpr int apiPort = 8080;
 }
 
 MainComponent::MainComponent()
 {
-    titleLabel.setText("AI Tracker - VSTi host test", juce::dontSendNotification);
+    titleLabel.setText("AI Tracker", juce::dontSendNotification);
     titleLabel.setJustificationType(juce::Justification::centred);
     titleLabel.setFont(juce::Font(20.0f));
     addAndMakeVisible(titleLabel);
@@ -16,6 +17,9 @@ MainComponent::MainComponent()
     statusLabel.setText("No plugin loaded", juce::dontSendNotification);
     statusLabel.setJustificationType(juce::Justification::centred);
     addAndMakeVisible(statusLabel);
+
+    apiLabel.setJustificationType(juce::Justification::centred);
+    addAndMakeVisible(apiLabel);
 
     loadButton.onClick = [this] { loadPluginClicked(); };
     addAndMakeVisible(loadButton);
@@ -28,12 +32,27 @@ MainComponent::MainComponent()
     testNoteButton.setEnabled(false);
     addAndMakeVisible(testNoteButton);
 
-    setSize(500, 300);
+    demoNotesButton.onClick = [this] { addDemoNotesClicked(); };
+    addAndMakeVisible(demoNotesButton);
+
+    playButton.onClick = [this] { sequencer.play(); };
+    addAndMakeVisible(playButton);
+
+    stopButton.onClick = [this] { sequencer.stop(); };
+    addAndMakeVisible(stopButton);
+
+    if (apiServer.start(apiPort))
+        apiLabel.setText("API: http://127.0.0.1:" + juce::String(apiPort), juce::dontSendNotification);
+    else
+        apiLabel.setText("API failed to start", juce::dontSendNotification);
+
+    setSize(500, 420);
 }
 
 MainComponent::~MainComponent()
 {
     stopTimer();
+    apiServer.stop();
 }
 
 void MainComponent::paint(juce::Graphics& g)
@@ -52,7 +71,16 @@ void MainComponent::resized()
     area.removeFromTop(10);
     testNoteButton.setBounds(area.removeFromTop(30));
     area.removeFromTop(10);
-    statusLabel.setBounds(area.removeFromTop(30));
+    demoNotesButton.setBounds(area.removeFromTop(30));
+    area.removeFromTop(10);
+
+    auto transportRow = area.removeFromTop(30);
+    playButton.setBounds(transportRow.removeFromLeft(transportRow.getWidth() / 2).reduced(4, 0));
+    stopButton.setBounds(transportRow.reduced(4, 0));
+    area.removeFromTop(10);
+
+    statusLabel.setBounds(area.removeFromTop(24));
+    apiLabel.setBounds(area.removeFromTop(24));
 }
 
 void MainComponent::loadPluginClicked()
@@ -96,6 +124,17 @@ void MainComponent::testNoteClicked()
     pluginHost.sendNoteOn(midiChannel, testNoteNumber, 0.9f);
     noteIsOn = true;
     startTimer(800);
+}
+
+void MainComponent::addDemoNotesClicked()
+{
+    sequencer.clearNotes();
+    // A simple one-bar C major arpeggio to prove the sequencer -> plugin path.
+    const int pitches[] = { 60, 64, 67, 72 };
+    for (int i = 0; i < 4; ++i)
+        sequencer.addNote(pitches[i], 0.85f, (double) i, 0.9);
+    sequencer.setLoop(true, 0.0, 4.0);
+    statusLabel.setText("Demo notes added (4 beats, looping)", juce::dontSendNotification);
 }
 
 void MainComponent::timerCallback()
