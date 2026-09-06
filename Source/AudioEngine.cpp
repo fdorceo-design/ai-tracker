@@ -73,6 +73,26 @@ void AudioEngine::loadPlugin(int trackId, const juce::File& file, const std::fun
     track->loadPlugin(formatManager, file, sampleRate, blockSize, onError);
 }
 
+bool AudioEngine::setTrackName(int trackId, juce::String name)
+{
+    const juce::ScopedLock lock(tracksLock);
+    if (auto* track = findTrack(trackId)) { track->setName(std::move(name)); return true; }
+    return false;
+}
+
+juce::String AudioEngine::getPluginPath(int trackId)
+{
+    const juce::ScopedLock lock(tracksLock);
+    auto* track = findTrack(trackId);
+    return track != nullptr ? track->getPluginPath() : juce::String();
+}
+
+void AudioEngine::setInstrumentIdentity(int trackId, juce::String name, juce::String path)
+{
+    const juce::ScopedLock lock(tracksLock);
+    if (auto* track = findTrack(trackId)) track->setInstrumentIdentity(std::move(name), std::move(path));
+}
+
 bool AudioEngine::isPluginLoaded(int trackId)
 {
     const juce::ScopedLock lock(tracksLock);

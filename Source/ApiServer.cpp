@@ -126,6 +126,14 @@ bool ApiServer::start(int portToUse)
         sendOk(res, engine.removeTrack(id));
     });
 
+    server->Post(R"(/api/tracks/(\d+)/name)", [this](const httplib::Request& req, httplib::Response& res)
+    {
+        auto parsed = juce::JSON::parse(juce::String(req.body));
+        auto name = parsed.getProperty("name", "").toString().trim();
+        if (name.isEmpty()) { sendOk(res, false, 200, 400); return; }
+        sendOk(res, engine.setTrackName(std::stoi(req.matches[1].str()), name));
+    });
+
     server->Post(R"(/api/tracks/(\d+)/plugin/load)", [this](const httplib::Request& req, httplib::Response& res)
     {
         const int trackId = std::stoi(req.matches[1].str());
@@ -267,9 +275,13 @@ bool ApiServer::start(int portToUse)
             return;
         }
 
-        const bool ok = sequencer.exportToMidiFile(juce::File(path));
+        if (!juce::File::isAbsolutePath(path)) { sendOk(res, false, 200, 400); return; }
+        bool ok = false;
+        callOnMessageThreadSync([&] { ok = sequencer.exportToMidiFile(juce::File(path)); });
         auto* obj = new juce::DynamicObject();
         obj->setProperty("ok", ok);
+        obj->setProperty("path", path);
+        obj->setProperty("title", juce::File(path).getFileNameWithoutExtension());
         if (!ok)
             obj->setProperty("error", "failed to write MIDI file");
         sendJson(res, juce::var(obj), ok ? 200 : 500);
@@ -280,6 +292,16 @@ bool ApiServer::start(int portToUse)
         auto parsed = juce::JSON::parse(juce::String(req.body));
         auto path = parsed.getProperty("path", juce::var()).toString();
         const int trackId = (int) parsed.getProperty("trackId", 0);
+
+        if (!path.isEmpty() && !juce::File::isAbsolutePath(path)) { sendOk(res, false, 200, 400); return; }
+        if (path.isNotEmpty() && !parsed.hasProperty("trackId"))
+        {
+            juce::var result;
+            const bool loadPlugins = (bool) parsed.getProperty("loadPlugins", true);
+            callOnMessageThreadSync([&] { result = sequencer.importMidiSession(juce::File(path), loadPlugins); });
+            sendJson(res, result, (bool) result.getProperty("ok", false) ? 200 : 400);
+            return;
+        }
 
         if (path.isEmpty())
         {

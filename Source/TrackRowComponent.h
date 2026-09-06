@@ -11,10 +11,10 @@ public:
     int getTrackId() const { return trackId; }
 
     void resized() override;
+    void refreshStatus();
 
 private:
     void loadClicked();
-    void refreshStatus();
 
     AudioEngine& engine;
     int trackId;

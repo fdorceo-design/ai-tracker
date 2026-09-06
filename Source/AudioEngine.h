@@ -18,6 +18,9 @@ public:
     bool removeTrack(int trackId);
     std::vector<int> getTrackIds() const;
     juce::String getTrackName(int trackId);
+    bool setTrackName(int trackId, juce::String name);
+    juce::String getPluginPath(int trackId);
+    void setInstrumentIdentity(int trackId, juce::String name, juce::String path);
 
     void loadPlugin(int trackId, const juce::File& file, const std::function<void(juce::String)>& onError);
     bool isPluginLoaded(int trackId);

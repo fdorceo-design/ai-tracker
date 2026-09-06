@@ -51,6 +51,9 @@ public:
     // notes land at the same beat positions they were written at, played
     // back at this sequencer's own BPM. SMPTE-timed files are not supported.
     bool importFromMidiFile(const juce::File& file, int trackId);
+    // Append separate tracks, restoring names, instrument identities and initial tempo.
+    // Must run on the JUCE message thread when loadPlugins is true.
+    juce::var importMidiSession(const juce::File& file, bool loadPlugins = true);
 
 private:
     void hiResTimerCallback() override;

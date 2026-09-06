@@ -130,6 +130,26 @@ void MainComponent::removeTrack(int trackId)
 
 void MainComponent::timerCallback()
 {
+    const auto ids = engine.getTrackIds();
+    bool changed = false;
+    for (auto it = trackRows.begin(); it != trackRows.end();)
+    {
+        if (std::find(ids.begin(), ids.end(), (*it)->getTrackId()) == ids.end())
+        { it = trackRows.erase(it); changed = true; }
+        else ++it;
+    }
+    for (auto id : ids)
+    {
+        if (std::none_of(trackRows.begin(), trackRows.end(), [id](const auto& row) { return row->getTrackId() == id; }))
+        {
+            auto row = std::make_unique<TrackRowComponent>(engine, id, [this, id] { removeTrack(id); });
+            tracksContainer.addAndMakeVisible(*row);
+            trackRows.push_back(std::move(row));
+            changed = true;
+        }
+    }
+    for (auto& row : trackRows) row->refreshStatus();
+    if (changed) relayoutTracks();
     juce::String txt = sequencer.isPlaying() ? "Playing" : "Stopped";
     txt << "  beat " << juce::String(sequencer.getPositionBeats(), 2)
         << "  bpm " << juce::String(sequencer.getBpm(), 0);

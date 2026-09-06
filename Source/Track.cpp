@@ -134,12 +134,14 @@ void Track::loadPlugin(juce::AudioPluginFormatManager& formatManager, const juce
 
     hideEditorWindow();
     processor = std::move(instance);
+    instrumentName = processor->getName();
+    pluginPath = file.getFullPathName();
     prepareToPlay(sampleRate, blockSize);
 }
 
 juce::String Track::getPluginName() const
 {
-    return processor != nullptr ? processor->getName() : juce::String();
+    return processor != nullptr ? processor->getName() : instrumentName;
 }
 
 void Track::showEditorWindow()

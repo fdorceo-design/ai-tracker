@@ -13,6 +13,10 @@ public:
 
     int getId() const { return id; }
     juce::String getName() const { return name; }
+    void setName(juce::String value) { name = std::move(value); }
+    juce::String getPluginPath() const { return pluginPath; }
+    void setInstrumentIdentity(juce::String label, juce::String path)
+    { instrumentName = std::move(label); pluginPath = std::move(path); }
 
     void loadPlugin(juce::AudioPluginFormatManager& formatManager, const juce::File& file,
                      double sampleRate, int blockSize, const std::function<void(juce::String)>& onError);
@@ -38,6 +42,7 @@ private:
 
     int id;
     juce::String name;
+    juce::String instrumentName, pluginPath;
     std::unique_ptr<juce::AudioPluginInstance> processor;
     juce::MidiMessageCollector midiCollector;
     juce::AudioBuffer<float> scratchBuffer;

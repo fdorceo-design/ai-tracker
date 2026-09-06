@@ -57,9 +57,15 @@ void TrackRowComponent::loadClicked()
 
 void TrackRowComponent::refreshStatus()
 {
+    nameLabel.setText(engine.getTrackName(trackId), juce::dontSendNotification);
     if (engine.isPluginLoaded(trackId))
     {
         statusLabel.setText("Loaded: " + engine.getPluginName(trackId), juce::dontSendNotification);
         editorButton.setEnabled(true);
+    }
+    else
+    {
+        statusLabel.setText("Not loaded: " + engine.getPluginName(trackId), juce::dontSendNotification);
+        editorButton.setEnabled(false);
     }
 }

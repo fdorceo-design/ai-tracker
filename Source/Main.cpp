@@ -1,5 +1,6 @@
 #include <juce_gui_extra/juce_gui_extra.h>
 #include "MainComponent.h"
+#include "MidiSessionTests.h"
 
 class AiTrackerApplication : public juce::JUCEApplication
 {
@@ -9,8 +10,15 @@ public:
     const juce::String getApplicationName() override { return "AI Tracker"; }
     const juce::String getApplicationVersion() override { return "0.1.0"; }
 
-    void initialise(const juce::String&) override
+    void initialise(const juce::String& commandLine) override
     {
+        const auto args = juce::StringArray::fromTokens(commandLine, true);
+        if (args.size() == 2 && args[0] == "--midi-self-test")
+        {
+            setApplicationReturnValue(runMidiSessionTests(juce::File(args[1].unquoted())) ? 0 : 1);
+            quit();
+            return;
+        }
         mainWindow = std::make_unique<MainWindow>(getApplicationName());
     }
 
