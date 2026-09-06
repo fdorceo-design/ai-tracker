@@ -22,6 +22,7 @@ juce_add_gui_app(AiTracker
 target_sources(AiTracker PRIVATE
     Source/Main.cpp
     Source/MainComponent.cpp
+    Source/PluginHost.cpp
 )
 
 target_compile_definitions(AiTracker PRIVATE
