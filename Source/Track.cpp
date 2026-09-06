@@ -1,6 +1,72 @@
 #include "Track.h"
 #include <juce_gui_extra/juce_gui_extra.h>
 
+#if JUCE_WINDOWS
+ #include <windows.h>
+#endif
+
+namespace
+{
+#if JUCE_WINDOWS
+    int filterHardCrash(unsigned int code)
+    {
+        return (code == EXCEPTION_ACCESS_VIOLATION || code == EXCEPTION_STACK_OVERFLOW)
+                   ? EXCEPTION_EXECUTE_HANDLER
+                   : EXCEPTION_CONTINUE_SEARCH;
+    }
+
+    // May throw/allocate freely -- this frame is only ever called *from*
+    // createInstanceGuarded below, never contains a __try itself, so none of
+    // the SEH/C++-unwind restrictions apply here.
+    juce::AudioPluginInstance* doCreatePluginInstance(juce::AudioPluginFormatManager* formatManager,
+                                                       const juce::PluginDescription* description,
+                                                       double sampleRate, int blockSize,
+                                                       juce::String* outError)
+    {
+        auto instance = formatManager->createPluginInstance(*description, sampleRate, blockSize, *outError);
+        return instance.release();
+    }
+
+    // A plugin can crash outright while instantiating (seen in practice with
+    // Kontakt 8 -- an access violation inside DWrite.dll during its own
+    // startup). Wrapping the call in SEH means one bad plugin fails to load
+    // instead of taking the whole host down. MSVC forbids C++ objects with
+    // destructors in a function that contains __try, so this frame is kept
+    // to raw pointers/PODs only; the actual work happens in the function
+    // above.
+    juce::AudioPluginInstance* createInstanceGuarded(juce::AudioPluginFormatManager* formatManager,
+                                                      const juce::PluginDescription* description,
+                                                      double sampleRate, int blockSize,
+                                                      juce::String* outError, bool* crashed)
+    {
+        *crashed = false;
+        juce::AudioPluginInstance* result = nullptr;
+
+        __try
+        {
+            result = doCreatePluginInstance(formatManager, description, sampleRate, blockSize, outError);
+        }
+        __except (filterHardCrash(GetExceptionCode()))
+        {
+            result = nullptr;
+            *crashed = true;
+        }
+
+        return result;
+    }
+#else
+    juce::AudioPluginInstance* createInstanceGuarded(juce::AudioPluginFormatManager* formatManager,
+                                                      const juce::PluginDescription* description,
+                                                      double sampleRate, int blockSize,
+                                                      juce::String* outError, bool* crashed)
+    {
+        *crashed = false;
+        auto instance = formatManager->createPluginInstance(*description, sampleRate, blockSize, *outError);
+        return instance.release();
+    }
+#endif
+}
+
 class Track::PluginWindow : public juce::DocumentWindow
 {
 public:
@@ -51,7 +117,15 @@ void Track::loadPlugin(juce::AudioPluginFormatManager& formatManager, const juce
     }
 
     juce::String errorMessage;
-    auto instance = formatManager.createPluginInstance(*descriptions[0], sampleRate, blockSize, errorMessage);
+    bool crashed = false;
+    std::unique_ptr<juce::AudioPluginInstance> instance(
+        createInstanceGuarded(&formatManager, descriptions[0], sampleRate, blockSize, &errorMessage, &crashed));
+
+    if (crashed)
+    {
+        onError("Plugin crashed while loading -- it is likely incompatible with this host.");
+        return;
+    }
     if (instance == nullptr)
     {
         onError(errorMessage);
