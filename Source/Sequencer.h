@@ -1,12 +1,12 @@
 #pragma once
 
 #include <juce_audio_utils/juce_audio_utils.h>
-#include "PluginHost.h"
+#include "AudioEngine.h"
 #include <vector>
 #include <mutex>
 #include <set>
 
-// One note event in beats, resolved against a single MIDI channel.
+// One note event in beats, tagged with the track it belongs to.
 // Timing is driven by a HighResolutionTimer polling loop rather than the
 // audio callback, so it is not sample-accurate, but is good enough for an
 // AI to sketch and audition ideas; a sample-accurate path can replace this
@@ -14,6 +14,7 @@
 struct SequencerNote
 {
     int id = 0;
+    int trackId = 0;
     int pitch = 60;
     float velocity = 0.8f;
     double startBeat = 0.0;
@@ -23,10 +24,10 @@ struct SequencerNote
 class Sequencer : private juce::HighResolutionTimer
 {
 public:
-    explicit Sequencer(PluginHost& hostToUse);
+    explicit Sequencer(AudioEngine& engineToUse);
     ~Sequencer() override;
 
-    int addNote(int pitch, float velocity, double startBeat, double lengthBeats);
+    int addNote(int trackId, int pitch, float velocity, double startBeat, double lengthBeats);
     bool removeNote(int id);
     void clearNotes();
     std::vector<SequencerNote> getNotes() const;
@@ -45,7 +46,7 @@ private:
     void hiResTimerCallback() override;
     void allNotesOff();
 
-    PluginHost& pluginHost;
+    AudioEngine& engine;
 
     mutable std::mutex noteMutex;
     std::vector<SequencerNote> notes;

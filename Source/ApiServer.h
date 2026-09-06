@@ -1,20 +1,20 @@
 #pragma once
 
-#include "PluginHost.h"
+#include "AudioEngine.h"
 #include "Sequencer.h"
 #include <memory>
 #include <thread>
 
 namespace httplib { class Server; }
 
-// HTTP surface an AI (or any external process) can drive: load a VST3,
-// read/write notes, and control the transport. Runs on its own thread;
-// operations that touch the plugin are marshalled onto the JUCE message
-// thread since plugin instantiation/UI expects to run there.
+// HTTP surface an AI (or any external process) can drive: create tracks,
+// load a VST3 into one, read/write notes, and control the transport. Runs
+// on its own thread; operations that touch a plugin are marshalled onto the
+// JUCE message thread since plugin instantiation/UI expects to run there.
 class ApiServer
 {
 public:
-    ApiServer(PluginHost& host, Sequencer& seq);
+    ApiServer(AudioEngine& engineToUse, Sequencer& seq);
     ~ApiServer();
 
     bool start(int portToUse);
@@ -23,7 +23,7 @@ public:
     int getPort() const { return port; }
 
 private:
-    PluginHost& pluginHost;
+    AudioEngine& engine;
     Sequencer& sequencer;
     std::unique_ptr<httplib::Server> server;
     std::thread serverThread;

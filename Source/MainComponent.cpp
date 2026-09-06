@@ -1,10 +1,10 @@
 #include "MainComponent.h"
+#include <algorithm>
 
 namespace
 {
-    constexpr int midiChannel = 1;
-    constexpr int testNoteNumber = 60; // C4
     constexpr int apiPort = 8080;
+    constexpr int trackRowHeight = 34;
 }
 
 MainComponent::MainComponent()
@@ -14,26 +14,11 @@ MainComponent::MainComponent()
     titleLabel.setFont(juce::Font(20.0f));
     addAndMakeVisible(titleLabel);
 
-    statusLabel.setText("No plugin loaded", juce::dontSendNotification);
-    statusLabel.setJustificationType(juce::Justification::centred);
-    addAndMakeVisible(statusLabel);
+    addTrackButton.onClick = [this] { addTrackClicked(); };
+    addAndMakeVisible(addTrackButton);
 
-    apiLabel.setJustificationType(juce::Justification::centred);
-    addAndMakeVisible(apiLabel);
-
-    loadButton.onClick = [this] { loadPluginClicked(); };
-    addAndMakeVisible(loadButton);
-
-    editorButton.onClick = [this] { pluginHost.showEditorWindow(); };
-    editorButton.setEnabled(false);
-    addAndMakeVisible(editorButton);
-
-    testNoteButton.onClick = [this] { testNoteClicked(); };
-    testNoteButton.setEnabled(false);
-    addAndMakeVisible(testNoteButton);
-
-    demoNotesButton.onClick = [this] { addDemoNotesClicked(); };
-    addAndMakeVisible(demoNotesButton);
+    demoButton.onClick = [this] { addDemoTrackClicked(); };
+    addAndMakeVisible(demoButton);
 
     playButton.onClick = [this] { sequencer.play(); };
     addAndMakeVisible(playButton);
@@ -41,12 +26,22 @@ MainComponent::MainComponent()
     stopButton.onClick = [this] { sequencer.stop(); };
     addAndMakeVisible(stopButton);
 
+    positionLabel.setJustificationType(juce::Justification::centred);
+    addAndMakeVisible(positionLabel);
+
+    apiLabel.setJustificationType(juce::Justification::centred);
+    addAndMakeVisible(apiLabel);
+
+    tracksViewport.setViewedComponent(&tracksContainer, false);
+    addAndMakeVisible(tracksViewport);
+
     if (apiServer.start(apiPort))
         apiLabel.setText("API: http://127.0.0.1:" + juce::String(apiPort), juce::dontSendNotification);
     else
         apiLabel.setText("API failed to start", juce::dontSendNotification);
 
-    setSize(500, 420);
+    setSize(560, 480);
+    startTimerHz(10);
 }
 
 MainComponent::~MainComponent()
@@ -65,13 +60,10 @@ void MainComponent::resized()
     auto area = getLocalBounds().reduced(20);
     titleLabel.setBounds(area.removeFromTop(30));
     area.removeFromTop(10);
-    loadButton.setBounds(area.removeFromTop(30));
-    area.removeFromTop(10);
-    editorButton.setBounds(area.removeFromTop(30));
-    area.removeFromTop(10);
-    testNoteButton.setBounds(area.removeFromTop(30));
-    area.removeFromTop(10);
-    demoNotesButton.setBounds(area.removeFromTop(30));
+
+    auto topRow = area.removeFromTop(30);
+    addTrackButton.setBounds(topRow.removeFromLeft(topRow.getWidth() / 2).reduced(4, 0));
+    demoButton.setBounds(topRow.reduced(4, 0));
     area.removeFromTop(10);
 
     auto transportRow = area.removeFromTop(30);
@@ -79,70 +71,67 @@ void MainComponent::resized()
     stopButton.setBounds(transportRow.reduced(4, 0));
     area.removeFromTop(10);
 
-    statusLabel.setBounds(area.removeFromTop(24));
+    positionLabel.setBounds(area.removeFromTop(24));
     apiLabel.setBounds(area.removeFromTop(24));
+    area.removeFromTop(10);
+
+    tracksViewport.setBounds(area);
+    relayoutTracks();
 }
 
-void MainComponent::loadPluginClicked()
+void MainComponent::relayoutTracks()
 {
-    fileChooser = std::make_unique<juce::FileChooser>(
-        "Select a VST3 plugin",
-        juce::File("C:\\Program Files\\Common Files\\VST3"),
-        "*.vst3");
+    const int width = tracksViewport.getWidth() - tracksViewport.getScrollBarThickness();
+    const int height = juce::jmax(trackRowHeight, (int) trackRows.size() * trackRowHeight);
+    tracksContainer.setSize(width, height);
 
-    fileChooser->launchAsync(juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
-        [this](const juce::FileChooser& chooser)
-        {
-            auto file = chooser.getResult();
-            if (file == juce::File())
-                return;
-
-            statusLabel.setText("Loading " + file.getFileNameWithoutExtension() + "...",
-                                 juce::dontSendNotification);
-
-            pluginHost.loadPlugin(file, [this](juce::String error)
-            {
-                statusLabel.setText("Failed: " + error, juce::dontSendNotification);
-                editorButton.setEnabled(false);
-                testNoteButton.setEnabled(false);
-            });
-
-            if (pluginHost.isPluginLoaded())
-            {
-                statusLabel.setText("Loaded: " + pluginHost.getPluginName(), juce::dontSendNotification);
-                editorButton.setEnabled(true);
-                testNoteButton.setEnabled(true);
-            }
-        });
+    int y = 0;
+    for (auto& row : trackRows)
+    {
+        row->setBounds(0, y, width, trackRowHeight);
+        y += trackRowHeight;
+    }
 }
 
-void MainComponent::testNoteClicked()
+void MainComponent::addTrackClicked()
 {
-    if (!pluginHost.isPluginLoaded())
-        return;
-
-    pluginHost.sendNoteOn(midiChannel, testNoteNumber, 0.9f);
-    noteIsOn = true;
-    startTimer(800);
+    const int id = engine.addTrack({});
+    auto row = std::make_unique<TrackRowComponent>(engine, id, [this, id] { removeTrack(id); });
+    tracksContainer.addAndMakeVisible(*row);
+    trackRows.push_back(std::move(row));
+    relayoutTracks();
 }
 
-void MainComponent::addDemoNotesClicked()
+void MainComponent::addDemoTrackClicked()
 {
-    sequencer.clearNotes();
-    // A simple one-bar C major arpeggio to prove the sequencer -> plugin path.
+    const int id = engine.addTrack("Demo");
+    auto row = std::make_unique<TrackRowComponent>(engine, id, [this, id] { removeTrack(id); });
+    tracksContainer.addAndMakeVisible(*row);
+    trackRows.push_back(std::move(row));
+    relayoutTracks();
+
+    // A one-bar C major arpeggio to prove the sequencer -> track path once
+    // a plugin is loaded into this track via its row's Load button.
     const int pitches[] = { 60, 64, 67, 72 };
     for (int i = 0; i < 4; ++i)
-        sequencer.addNote(pitches[i], 0.85f, (double) i, 0.9);
+        sequencer.addNote(id, pitches[i], 0.85f, (double) i, 0.9);
     sequencer.setLoop(true, 0.0, 4.0);
-    statusLabel.setText("Demo notes added (4 beats, looping)", juce::dontSendNotification);
+}
+
+void MainComponent::removeTrack(int trackId)
+{
+    engine.removeTrack(trackId);
+    trackRows.erase(std::remove_if(trackRows.begin(), trackRows.end(),
+                                    [trackId](const std::unique_ptr<TrackRowComponent>& r)
+                                    { return r->getTrackId() == trackId; }),
+                     trackRows.end());
+    relayoutTracks();
 }
 
 void MainComponent::timerCallback()
 {
-    stopTimer();
-    if (noteIsOn)
-    {
-        pluginHost.sendNoteOff(midiChannel, testNoteNumber);
-        noteIsOn = false;
-    }
+    juce::String txt = sequencer.isPlaying() ? "Playing" : "Stopped";
+    txt << "  beat " << juce::String(sequencer.getPositionBeats(), 2)
+        << "  bpm " << juce::String(sequencer.getBpm(), 0);
+    positionLabel.setText(txt, juce::dontSendNotification);
 }

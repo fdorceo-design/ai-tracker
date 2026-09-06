@@ -2,12 +2,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace
-{
-    constexpr int sequencerMidiChannel = 1;
-}
-
-Sequencer::Sequencer(PluginHost& hostToUse) : pluginHost(hostToUse)
+Sequencer::Sequencer(AudioEngine& engineToUse) : engine(engineToUse)
 {
 }
 
@@ -16,11 +11,12 @@ Sequencer::~Sequencer()
     stop();
 }
 
-int Sequencer::addNote(int pitch, float velocity, double startBeat, double lengthBeats)
+int Sequencer::addNote(int trackId, int pitch, float velocity, double startBeat, double lengthBeats)
 {
     std::lock_guard<std::mutex> lock(noteMutex);
     SequencerNote n;
     n.id = nextId++;
+    n.trackId = trackId;
     n.pitch = pitch;
     n.velocity = velocity;
     n.startBeat = startBeat;
@@ -82,12 +78,12 @@ void Sequencer::setLoop(bool enabled, double startBeat, double endBeat)
 
 void Sequencer::allNotesOff()
 {
+    const auto snapshot = getNotes();
     for (auto id : soundingNoteIds)
     {
-        std::lock_guard<std::mutex> lock(noteMutex);
-        auto it = std::find_if(notes.begin(), notes.end(), [id](const SequencerNote& n) { return n.id == id; });
-        if (it != notes.end())
-            pluginHost.sendNoteOff(sequencerMidiChannel, it->pitch);
+        auto it = std::find_if(snapshot.begin(), snapshot.end(), [id](const SequencerNote& n) { return n.id == id; });
+        if (it != snapshot.end())
+            engine.sendNoteOff(it->trackId, 1, it->pitch);
     }
     soundingNoteIds.clear();
 }
@@ -113,12 +109,12 @@ void Sequencer::hiResTimerCallback()
 
         if (startsInWindow)
         {
-            pluginHost.sendNoteOn(sequencerMidiChannel, n.pitch, n.velocity);
+            engine.sendNoteOn(n.trackId, 1, n.pitch, n.velocity);
             soundingNoteIds.insert(n.id);
         }
         if (endsInWindow && soundingNoteIds.count(n.id) > 0)
         {
-            pluginHost.sendNoteOff(sequencerMidiChannel, n.pitch);
+            engine.sendNoteOff(n.trackId, 1, n.pitch);
             soundingNoteIds.erase(n.id);
         }
     }

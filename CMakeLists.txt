@@ -30,7 +30,9 @@ juce_add_gui_app(AiTracker
 target_sources(AiTracker PRIVATE
     Source/Main.cpp
     Source/MainComponent.cpp
-    Source/PluginHost.cpp
+    Source/TrackRowComponent.cpp
+    Source/Track.cpp
+    Source/AudioEngine.cpp
     Source/Sequencer.cpp
     Source/ApiServer.cpp
 )
