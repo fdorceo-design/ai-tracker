@@ -26,13 +26,16 @@ articulation actually changing — it's not a reliable signal. Trust the
 articulation name label instead.
 
 **Launch order**: when routing tracks to an external standalone (see
-[MIDI.md](MIDI.md)), AI Tracker must be launched *before* the standalone app
-(e.g. Kontakt Standalone), not after — confirmed by the user; launching it
-first left the connection unreliable/silent even with the virtual MIDI port,
-its enabled state, and the channel assignment all looking correct. If asked
-to launch the standalone app (`POST /api/launch-app`), it's already safe by
-construction since AI Tracker exists first — but don't tell the user to
-start the standalone app manually before AI Tracker is already running.
+[MIDI.md](MIDI.md)), AI Tracker must be launched *before* the standalone app,
+not after — confirmed repeatedly by the user with Kontakt Standalone;
+launching it first left the connection unreliable/silent even with the
+virtual MIDI port, its enabled state, and the channel assignment all looking
+correct. Treat this as a general rule for any standalone routed this way
+(only actually confirmed with Kontakt so far, but the user's own read is
+that it's likely universal, not Kontakt-specific). If asked to launch the
+standalone app (`POST /api/launch-app`), it's already safe by construction
+since AI Tracker exists first — but don't tell the user to start the
+standalone app manually before AI Tracker is already running.
 
 ## Composition conventions
 

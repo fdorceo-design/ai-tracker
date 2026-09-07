@@ -75,9 +75,12 @@ instead:
    any standalone app you route to.
 2. **Launch order matters**: start AI Tracker first, *then* the standalone
    app. Launching the standalone app first and AI Tracker second was
-   observed to leave the connection unreliable/silent even though the
-   virtual port, its enabled state, and the MIDI channel assignment all
-   looked correct -- not root-caused, just a confirmed workaround.
+   repeatedly observed (with Kontakt Standalone) to leave the connection
+   unreliable/silent even though the virtual port, its enabled state, and
+   the MIDI channel assignment all looked correct. Not root-caused, and
+   only actually confirmed with Kontakt so far, but treat it as a general
+   rule for any standalone routed this way, not a Kontakt-specific quirk --
+   always launch AI Tracker first.
 3. In the standalone app (e.g. Kontakt 8 Standalone), set that virtual port
    as its MIDI input and your real interface as its audio output.
 4. In AI Tracker, click a track's **toMIDI** button (or
