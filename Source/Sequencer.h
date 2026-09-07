@@ -29,6 +29,7 @@ public:
 
     int addNote(int trackId, int pitch, float velocity, double startBeat, double lengthBeats);
     bool removeNote(int id);
+    bool setNotePitch(int id, int newPitch);
     void clearNotes();
     std::vector<SequencerNote> getNotes() const;
 

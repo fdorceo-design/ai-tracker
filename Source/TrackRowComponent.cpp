@@ -4,6 +4,9 @@ TrackRowComponent::TrackRowComponent(AudioEngine& engineIn, int trackIdIn, std::
     : engine(engineIn), trackId(trackIdIn), onRemove(std::move(onRemoveIn))
 {
     nameLabel.setText(engine.getTrackName(trackId), juce::dontSendNotification);
+    nameLabel.setJustificationType(juce::Justification::centred);
+    nameLabel.setEditable(false, true, false);
+    nameLabel.onTextChange = [this] { engine.setTrackName(trackId, nameLabel.getText()); };
     addAndMakeVisible(nameLabel);
 
     loadButton.onClick = [this] { loadClicked(); };
@@ -17,17 +20,24 @@ TrackRowComponent::TrackRowComponent(AudioEngine& engineIn, int trackIdIn, std::
     addAndMakeVisible(removeButton);
 
     statusLabel.setText("No plugin", juce::dontSendNotification);
+    statusLabel.setJustificationType(juce::Justification::centred);
+    statusLabel.setFont(juce::Font(juce::FontOptions(11.0f)));
+    statusLabel.setMinimumHorizontalScale(1.0f);
     addAndMakeVisible(statusLabel);
 }
 
 void TrackRowComponent::resized()
 {
-    auto area = getLocalBounds().reduced(2);
-    nameLabel.setBounds(area.removeFromLeft(90));
-    loadButton.setBounds(area.removeFromLeft(100));
-    editorButton.setBounds(area.removeFromLeft(70));
-    removeButton.setBounds(area.removeFromLeft(70));
-    statusLabel.setBounds(area);
+    auto area = getLocalBounds().reduced(3);
+    nameLabel.setBounds(area.removeFromTop(20));
+    area.removeFromTop(2);
+    statusLabel.setBounds(area.removeFromTop(28));
+    area.removeFromTop(2);
+    loadButton.setBounds(area.removeFromTop(22));
+    area.removeFromTop(2);
+    auto buttonRow = area.removeFromTop(22);
+    editorButton.setBounds(buttonRow.removeFromLeft(buttonRow.getWidth() / 2).reduced(1, 0));
+    removeButton.setBounds(buttonRow.reduced(1, 0));
 }
 
 void TrackRowComponent::loadClicked()

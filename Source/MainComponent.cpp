@@ -1,10 +1,8 @@
 #include "MainComponent.h"
-#include <algorithm>
 
 namespace
 {
     constexpr int apiPort = 8080;
-    constexpr int trackRowHeight = 34;
 }
 
 MainComponent::MainComponent()
@@ -14,11 +12,8 @@ MainComponent::MainComponent()
     titleLabel.setFont(juce::Font(20.0f));
     addAndMakeVisible(titleLabel);
 
-    addTrackButton.onClick = [this] { addTrackClicked(); };
+    addTrackButton.onClick = [this] { engine.addTrack({}); };
     addAndMakeVisible(addTrackButton);
-
-    demoButton.onClick = [this] { addDemoTrackClicked(); };
-    addAndMakeVisible(demoButton);
 
     playButton.onClick = [this] { sequencer.play(); };
     addAndMakeVisible(playButton);
@@ -32,15 +27,16 @@ MainComponent::MainComponent()
     apiLabel.setJustificationType(juce::Justification::centred);
     addAndMakeVisible(apiLabel);
 
-    tracksViewport.setViewedComponent(&tracksContainer, false);
-    addAndMakeVisible(tracksViewport);
+    trackerViewport.setViewedComponent(&trackerContent, false);
+    addAndMakeVisible(trackerViewport);
+    trackerContent.refreshTracks();
 
     if (apiServer.start(apiPort))
         apiLabel.setText("API: http://127.0.0.1:" + juce::String(apiPort), juce::dontSendNotification);
     else
         apiLabel.setText("API failed to start", juce::dontSendNotification);
 
-    setSize(560, 480);
+    setSize(900, 640);
     startTimerHz(10);
 }
 
@@ -62,94 +58,24 @@ void MainComponent::resized()
     area.removeFromTop(10);
 
     auto topRow = area.removeFromTop(30);
-    addTrackButton.setBounds(topRow.removeFromLeft(topRow.getWidth() / 2).reduced(4, 0));
-    demoButton.setBounds(topRow.reduced(4, 0));
-    area.removeFromTop(10);
-
-    auto transportRow = area.removeFromTop(30);
-    playButton.setBounds(transportRow.removeFromLeft(transportRow.getWidth() / 2).reduced(4, 0));
-    stopButton.setBounds(transportRow.reduced(4, 0));
+    addTrackButton.setBounds(topRow.removeFromLeft(120));
+    topRow.removeFromLeft(10);
+    playButton.setBounds(topRow.removeFromLeft((topRow.getWidth() - 10) / 2));
+    topRow.removeFromLeft(10);
+    stopButton.setBounds(topRow);
     area.removeFromTop(10);
 
     positionLabel.setBounds(area.removeFromTop(24));
     apiLabel.setBounds(area.removeFromTop(24));
     area.removeFromTop(10);
 
-    tracksViewport.setBounds(area);
-    relayoutTracks();
-}
-
-void MainComponent::relayoutTracks()
-{
-    const int width = tracksViewport.getWidth() - tracksViewport.getScrollBarThickness();
-    const int height = juce::jmax(trackRowHeight, (int) trackRows.size() * trackRowHeight);
-    tracksContainer.setSize(width, height);
-
-    int y = 0;
-    for (auto& row : trackRows)
-    {
-        row->setBounds(0, y, width, trackRowHeight);
-        y += trackRowHeight;
-    }
-}
-
-void MainComponent::addTrackClicked()
-{
-    const int id = engine.addTrack({});
-    auto row = std::make_unique<TrackRowComponent>(engine, id, [this, id] { removeTrack(id); });
-    tracksContainer.addAndMakeVisible(*row);
-    trackRows.push_back(std::move(row));
-    relayoutTracks();
-}
-
-void MainComponent::addDemoTrackClicked()
-{
-    const int id = engine.addTrack("Demo");
-    auto row = std::make_unique<TrackRowComponent>(engine, id, [this, id] { removeTrack(id); });
-    tracksContainer.addAndMakeVisible(*row);
-    trackRows.push_back(std::move(row));
-    relayoutTracks();
-
-    // A one-bar C major arpeggio to prove the sequencer -> track path once
-    // a plugin is loaded into this track via its row's Load button.
-    const int pitches[] = { 60, 64, 67, 72 };
-    for (int i = 0; i < 4; ++i)
-        sequencer.addNote(id, pitches[i], 0.85f, (double) i, 0.9);
-    sequencer.setLoop(true, 0.0, 4.0);
-}
-
-void MainComponent::removeTrack(int trackId)
-{
-    engine.removeTrack(trackId);
-    trackRows.erase(std::remove_if(trackRows.begin(), trackRows.end(),
-                                    [trackId](const std::unique_ptr<TrackRowComponent>& r)
-                                    { return r->getTrackId() == trackId; }),
-                     trackRows.end());
-    relayoutTracks();
+    trackerViewport.setBounds(area);
 }
 
 void MainComponent::timerCallback()
 {
-    const auto ids = engine.getTrackIds();
-    bool changed = false;
-    for (auto it = trackRows.begin(); it != trackRows.end();)
-    {
-        if (std::find(ids.begin(), ids.end(), (*it)->getTrackId()) == ids.end())
-        { it = trackRows.erase(it); changed = true; }
-        else ++it;
-    }
-    for (auto id : ids)
-    {
-        if (std::none_of(trackRows.begin(), trackRows.end(), [id](const auto& row) { return row->getTrackId() == id; }))
-        {
-            auto row = std::make_unique<TrackRowComponent>(engine, id, [this, id] { removeTrack(id); });
-            tracksContainer.addAndMakeVisible(*row);
-            trackRows.push_back(std::move(row));
-            changed = true;
-        }
-    }
-    for (auto& row : trackRows) row->refreshStatus();
-    if (changed) relayoutTracks();
+    trackerContent.refreshTracks();
+
     juce::String txt = sequencer.isPlaying() ? "Playing" : "Stopped";
     txt << "  beat " << juce::String(sequencer.getPositionBeats(), 2)
         << "  bpm " << juce::String(sequencer.getBpm(), 0);

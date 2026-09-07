@@ -4,7 +4,7 @@
 #include "AudioEngine.h"
 #include "Sequencer.h"
 #include "ApiServer.h"
-#include "TrackRowComponent.h"
+#include "TrackerContentComponent.h"
 
 class MainComponent : public juce::Component,
                        private juce::Timer
@@ -17,10 +17,6 @@ public:
     void resized() override;
 
 private:
-    void addTrackClicked();
-    void addDemoTrackClicked();
-    void removeTrack(int trackId);
-    void relayoutTracks();
     void timerCallback() override;
 
     AudioEngine engine;
@@ -29,15 +25,13 @@ private:
 
     juce::Label titleLabel;
     juce::TextButton addTrackButton{"+ Add Track"};
-    juce::TextButton demoButton{"Add Demo Track"};
     juce::TextButton playButton{"Play"};
     juce::TextButton stopButton{"Stop"};
     juce::Label positionLabel;
     juce::Label apiLabel;
 
-    juce::Viewport tracksViewport;
-    juce::Component tracksContainer;
-    std::vector<std::unique_ptr<TrackRowComponent>> trackRows;
+    juce::Viewport trackerViewport;
+    TrackerContentComponent trackerContent { engine, sequencer };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
 };

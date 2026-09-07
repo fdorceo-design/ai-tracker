@@ -60,6 +60,16 @@ bool Sequencer::removeNote(int id)
     return true;
 }
 
+bool Sequencer::setNotePitch(int id, int newPitch)
+{
+    std::lock_guard<std::mutex> lock(noteMutex);
+    auto it = std::find_if(notes.begin(), notes.end(), [id](const SequencerNote& n) { return n.id == id; });
+    if (it == notes.end())
+        return false;
+    it->pitch = juce::jlimit(0, 127, newPitch);
+    return true;
+}
+
 void Sequencer::clearNotes()
 {
     std::lock_guard<std::mutex> lock(noteMutex);
