@@ -61,6 +61,12 @@ public:
     // controllerNumber and value are both 0-127 (raw MIDI CC).
     void sendCC(int channel, int controllerNumber, int value);
 
+    // Sends All Notes Off (CC123) and All Sound Off (CC120) on every MIDI
+    // channel (1-16), not just this track's assigned one -- a stuck note
+    // could be on any channel if e.g. the app was previously force-killed
+    // mid-note (skipping the note-off that a clean shutdown would send).
+    void sendPanic();
+
 private:
     int id;
     juce::String name;

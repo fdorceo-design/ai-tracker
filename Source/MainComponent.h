@@ -36,6 +36,7 @@ private:
     juce::TextButton playButton{"Play"};
     juce::TextButton pauseButton{"Pause"};
     juce::TextButton stopButton{"Stop"};
+    juce::TextButton panicButton{"Panic"};
     juce::Label bpmLabel;
     juce::Label timeSignatureLabel;
     juce::Label positionLabel;

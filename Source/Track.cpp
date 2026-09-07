@@ -106,3 +106,20 @@ void Track::sendCC(int channel, int controllerNumber, int value)
     }
     proxy.sendCC(channel, controllerNumber, value);
 }
+
+void Track::sendPanic()
+{
+    for (int channel = 1; channel <= 16; ++channel)
+    {
+        if (externalMidiOutput != nullptr)
+        {
+            externalMidiOutput->sendMessageNow(juce::MidiMessage::allNotesOff(channel));
+            externalMidiOutput->sendMessageNow(juce::MidiMessage::allSoundOff(channel));
+        }
+        else
+        {
+            proxy.sendCC(channel, 123, 0);
+            proxy.sendCC(channel, 120, 0);
+        }
+    }
+}

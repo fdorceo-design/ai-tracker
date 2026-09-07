@@ -456,6 +456,13 @@ bool ApiServer::start(int portToUse)
         sendOk(res, true);
     });
 
+    server->Post("/api/panic", [this](const httplib::Request&, httplib::Response& res)
+    {
+        sequencer.stop();
+        engine.panicAllTracks();
+        sendOk(res, true);
+    });
+
     server->Post("/api/transport/pause", [this](const httplib::Request&, httplib::Response& res)
     {
         sequencer.pause();

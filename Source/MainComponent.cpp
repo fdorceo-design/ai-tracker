@@ -73,6 +73,14 @@ namespace
 
 MainComponent::MainComponent()
 {
+    // A previous run that was force-killed (e.g. via Task Manager, or a
+    // dev rebuild's taskkill) skips the note-offs a clean shutdown would
+    // send, which can leave a note stuck sounding on whatever external
+    // synth was listening. Blast panic across every MIDI output on the
+    // system once, up front, before this session sends anything of its
+    // own -- cheap insurance against inheriting someone else's stuck note.
+    AudioEngine::panicAllMidiOutputDevices();
+
     applyLsdjPalette();
 
     titleLabel.setText("AI Tracker", juce::dontSendNotification);
@@ -91,6 +99,12 @@ MainComponent::MainComponent()
 
     stopButton.onClick = [this] { sequencer.stop(); };
     addAndMakeVisible(stopButton);
+
+    // Manual escape hatch for stuck notes (e.g. left sounding by a
+    // previous force-killed run, or anything else) -- All Notes Off / All
+    // Sound Off on every channel of every current track's output.
+    panicButton.onClick = [this] { sequencer.stop(); engine.panicAllTracks(); };
+    addAndMakeVisible(panicButton);
 
     bpmLabel.setJustificationType(juce::Justification::centred);
     bpmLabel.setEditable(false, true, false);
@@ -171,6 +185,8 @@ MainComponent::~MainComponent()
 {
     stopTimer();
     apiServer.stop();
+    sequencer.stop();
+    engine.panicAllTracks();
 }
 
 void MainComponent::paint(juce::Graphics& g)
@@ -192,6 +208,8 @@ void MainComponent::resized()
     pauseButton.setBounds(topRow.removeFromLeft(80));
     topRow.removeFromLeft(10);
     stopButton.setBounds(topRow.removeFromLeft(80));
+    topRow.removeFromLeft(10);
+    panicButton.setBounds(topRow.removeFromLeft(70));
     topRow.removeFromLeft(10);
     bpmLabel.setBounds(topRow.removeFromLeft(90));
     topRow.removeFromLeft(10);

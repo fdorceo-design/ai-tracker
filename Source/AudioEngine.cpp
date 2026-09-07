@@ -184,6 +184,28 @@ void AudioEngine::sendCC(int trackId, int channel, int controllerNumber, int val
         track->sendCC(channel, controllerNumber, value);
 }
 
+void AudioEngine::panicAllTracks()
+{
+    const juce::ScopedLock lock(tracksLock);
+    for (auto& track : tracks)
+        track->sendPanic();
+}
+
+void AudioEngine::panicAllMidiOutputDevices()
+{
+    for (const auto& device : juce::MidiOutput::getAvailableDevices())
+    {
+        auto output = juce::MidiOutput::openDevice(device.identifier);
+        if (output == nullptr)
+            continue;
+        for (int channel = 1; channel <= 16; ++channel)
+        {
+            output->sendMessageNow(juce::MidiMessage::allNotesOff(channel));
+            output->sendMessageNow(juce::MidiMessage::allSoundOff(channel));
+        }
+    }
+}
+
 void AudioEngine::audioDeviceIOCallbackWithContext(const float* const* /*inputChannelData*/, int /*numInputChannels*/,
                                                     float* const* outputChannelData, int numOutputChannels,
                                                     int numSamples, const juce::AudioIODeviceCallbackContext&)

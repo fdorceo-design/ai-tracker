@@ -48,6 +48,19 @@ public:
     void sendNoteOff(int trackId, int channel, int noteNumber);
     void sendCC(int trackId, int channel, int controllerNumber, int value);
 
+    // Sends All Notes Off / All Sound Off on every channel of every current
+    // track's output (external MIDI device or in-process plugin). Use for
+    // a manual "Panic" action, or automatically on shutdown.
+    void panicAllTracks();
+
+    // Broader net for a stuck note left by a *previous* run of this app
+    // (e.g. force-killed mid-note, skipping the note-off a clean shutdown
+    // sends): briefly opens every MIDI output device currently on the
+    // system, blasts panic on all 16 channels, and closes it again. Doesn't
+    // touch any track state, so it's safe to call before any track exists
+    // -- meant to run once at startup.
+    static void panicAllMidiOutputDevices();
+
     juce::AudioDeviceManager& getDeviceManager() { return deviceManager; }
 
     void audioDeviceIOCallbackWithContext(const float* const* inputChannelData, int numInputChannels,
