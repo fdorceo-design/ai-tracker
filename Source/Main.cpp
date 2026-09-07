@@ -38,7 +38,16 @@ public:
         {
             setUsingNativeTitleBar(true);
             setContentOwned(new MainComponent(), true);
-            centreWithSize(getWidth(), getHeight());
+
+            // Default position/size: top-left of the screen, sized off a
+            // 1080p reference (80% height, 50% width) rather than centred --
+            // scales with the actual display via juce::Desktop, so this
+            // still lands sensibly at other resolutions.
+            const auto displayArea = juce::Desktop::getInstance().getDisplays().getPrimaryDisplay()->userArea;
+            const int width = (int) (displayArea.getWidth() * 0.5);
+            const int height = (int) (displayArea.getHeight() * 0.8);
+            setBounds(displayArea.getX(), displayArea.getY(), width, height);
+
             setResizable(true, true);
             setVisible(true);
         }
