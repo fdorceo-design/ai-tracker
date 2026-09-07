@@ -62,9 +62,14 @@ articulation name label instead.
 - `POST /api/tempo-events {beat, bpm}` schedules a tempo change (rubato,
   accelerando/ritardando as a step function — for a gradual change, place
   several events close together). Not per-track; affects the whole piece.
-- `POST /api/timesig-events {beat, beatsPerBar}` schedules a meter change.
-  **Must land exactly on a bar boundary of the previously-active meter** —
-  the bar-index math assumes this and will misalign the tracker grid if not.
+- `POST /api/timesig-events {beat, numerator, denominator}` schedules a
+  meter change (denominator defaults to 4 if omitted; `beatsPerBar` also
+  still works as an alias for `numerator`). A bar's length in quarter-note
+  beats is `numerator * 4.0 / denominator`, so e.g. 3/8 is 1.5 beats/bar —
+  fractional bar lengths are fine. **Must land exactly on a bar boundary of
+  the previously-active meter** — the bar-index math assumes this and will
+  misalign the tracker grid if not. `POST /api/transport/timesignature`
+  (the non-scheduled, immediate version) takes the same fields.
 - All three follow the same GET/DELETE/`.../clear` pattern as `/api/notes`.
 
 ## Reference docs
