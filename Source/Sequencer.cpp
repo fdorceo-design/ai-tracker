@@ -237,6 +237,28 @@ int Sequencer::getBarIndexForBeat(double beat) const
     return barsAccumulated;
 }
 
+double Sequencer::getBarStartBeat(int barIndex) const
+{
+    auto events = getTimeSigEvents();
+    std::sort(events.begin(), events.end(), [](const SequencerTimeSigEvent& a, const SequencerTimeSigEvent& b) { return a.beat < b.beat; });
+
+    int currentMeter = juce::jmax(1, beatsPerBar.load());
+    double segmentStart = 0.0;
+    int barsAccumulated = 0;
+
+    for (const auto& ev : events)
+    {
+        const int barsInSegment = (int) std::round((ev.beat - segmentStart) / currentMeter);
+        if (barIndex < barsAccumulated + barsInSegment)
+            return segmentStart + (double) (barIndex - barsAccumulated) * currentMeter;
+        barsAccumulated += barsInSegment;
+        segmentStart = ev.beat;
+        currentMeter = juce::jmax(1, ev.beatsPerBar);
+    }
+
+    return segmentStart + (double) (barIndex - barsAccumulated) * currentMeter;
+}
+
 void Sequencer::play()
 {
     if (playing.exchange(true))

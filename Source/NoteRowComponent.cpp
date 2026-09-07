@@ -27,8 +27,23 @@ namespace
 NoteRowComponent::NoteRowComponent(Sequencer& sequencerIn, int noteIdIn)
     : sequencer(sequencerIn), noteId(noteIdIn)
 {
+    makeEditable(barLabel);
+    barLabel.onTextChange = [this]
+    {
+        const int newBarIndex = juce::jmax(0, parseInt(barLabel.getText(), 1) - 1);
+        const int oldBarIndex = sequencer.getBarIndexForBeat(cachedNote.startBeat);
+        const double intraBarOffset = cachedNote.startBeat - sequencer.getBarStartBeat(oldBarIndex);
+        sequencer.setNoteBeat(noteId, sequencer.getBarStartBeat(newBarIndex) + intraBarOffset);
+    };
+    addAndMakeVisible(barLabel);
+
     makeEditable(beatLabel);
-    beatLabel.onTextChange = [this] { sequencer.setNoteBeat(noteId, parseDouble(beatLabel.getText(), 0.0)); };
+    beatLabel.onTextChange = [this]
+    {
+        const double relBeat = juce::jmax(0.0, parseDouble(beatLabel.getText(), 1.0) - 1.0);
+        const int barIndex = sequencer.getBarIndexForBeat(cachedNote.startBeat);
+        sequencer.setNoteBeat(noteId, sequencer.getBarStartBeat(barIndex) + relBeat);
+    };
     addAndMakeVisible(beatLabel);
 
     makeEditable(lengthLabel);
@@ -60,8 +75,14 @@ NoteRowComponent::NoteRowComponent(Sequencer& sequencerIn, int noteIdIn)
 
 void NoteRowComponent::refresh(const SequencerNote& note)
 {
+    cachedNote = note;
+    const int barIndex = sequencer.getBarIndexForBeat(note.startBeat);
+    const double relBeat = note.startBeat - sequencer.getBarStartBeat(barIndex) + 1.0;
+
+    if (barLabel.getCurrentTextEditor() == nullptr)
+        barLabel.setText(juce::String(barIndex + 1), juce::dontSendNotification);
     if (beatLabel.getCurrentTextEditor() == nullptr)
-        beatLabel.setText(juce::String(note.startBeat, 3), juce::dontSendNotification);
+        beatLabel.setText(juce::String(relBeat, 3), juce::dontSendNotification);
     if (lengthLabel.getCurrentTextEditor() == nullptr)
         lengthLabel.setText(juce::String(note.lengthBeats, 3), juce::dontSendNotification);
     if (!pitchBox.isPopupActive())
@@ -91,9 +112,10 @@ void NoteRowComponent::paint(juce::Graphics& g)
 void NoteRowComponent::resized()
 {
     auto area = getLocalBounds().reduced(1);
-    deleteButton.setBounds(area.removeFromRight(20));
-    beatLabel.setBounds(area.removeFromLeft(area.getWidth() / 4));
-    lengthLabel.setBounds(area.removeFromLeft(area.getWidth() / 3));
-    pitchBox.setBounds(area.removeFromLeft(area.getWidth() / 2));
-    velocityLabel.setBounds(area);
+    deleteButton.setBounds(area.removeFromRight(18));
+    barLabel.setBounds(area.removeFromLeft(20));
+    beatLabel.setBounds(area.removeFromLeft(40));
+    lengthLabel.setBounds(area.removeFromLeft(34));
+    velocityLabel.setBounds(area.removeFromRight(30));
+    pitchBox.setBounds(area); // gets whatever's left -- its text is the longest
 }

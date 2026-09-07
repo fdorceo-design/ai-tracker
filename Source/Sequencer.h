@@ -89,6 +89,12 @@ public:
     // lines so they stay correct across a meter change.
     int getBarIndexForBeat(double beat) const;
 
+    // Inverse of getBarIndexForBeat: the absolute beat where a given
+    // (0-based) bar index starts. Used to display/edit a note's beat as
+    // "bar N, beat M" (1-indexed, reset per bar) instead of a running
+    // count.
+    double getBarStartBeat(int barIndex) const;
+
     void play();
     void stop();
     // Halts playback (and silences sounding notes) without resetting the

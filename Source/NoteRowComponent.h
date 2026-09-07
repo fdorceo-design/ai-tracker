@@ -21,8 +21,13 @@ public:
 private:
     Sequencer& sequencer;
     int noteId;
-    juce::Label beatLabel, lengthLabel, velocityLabel;
+    // barLabel/beatLabel show and edit a bar-relative position (1-indexed
+    // bar number, beat resets to 1 at each bar line) rather than the
+    // underlying absolute/running startBeat -- easier to read, though the
+    // stored data is still a single absolute beat.
+    juce::Label barLabel, beatLabel, lengthLabel, velocityLabel;
     juce::ComboBox pitchBox;
     juce::TextButton deleteButton { "x" };
     bool highlighted = false;
+    SequencerNote cachedNote;
 };

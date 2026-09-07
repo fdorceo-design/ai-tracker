@@ -5,7 +5,7 @@
 TrackEventListComponent::TrackEventListComponent(Sequencer& sequencerIn, int trackIdIn)
     : sequencer(sequencerIn), trackId(trackIdIn)
 {
-    captionLabel.setText("beat | len | pitch | vel", juce::dontSendNotification);
+    captionLabel.setText("bar.beat | len | pitch | vel", juce::dontSendNotification);
     captionLabel.setJustificationType(juce::Justification::centred);
     captionLabel.setFont(juce::Font(juce::FontOptions(16.0f, juce::Font::bold)));
     addAndMakeVisible(captionLabel);

@@ -165,7 +165,7 @@ void MainComponent::resized()
     apiLabel.setBounds(area.removeFromTop(24));
     area.removeFromTop(10);
 
-    tempoMapColumn.setBounds(area.removeFromLeft(70));
+    tempoMapColumn.setBounds(area.removeFromLeft(56));
     trackerViewport.setBounds(area);
 }
 
@@ -202,4 +202,5 @@ void MainComponent::timerCallback()
     }
 
     tempoMapColumn.setScrollOffsetY(trackerViewport.getViewPositionY());
+    tempoMapColumn.repaint();
 }
