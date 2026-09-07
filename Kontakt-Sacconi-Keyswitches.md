@@ -70,6 +70,48 @@ MIDI 0-127). Unlike a keyswitch note, a CC value is *not* one-shot in effect
 it can be used for slow swells (multiple CC events ramping value over
 several beats) as well as a single static level per phrase.
 
+## Articulation-specific performance controls
+
+For AI generation, do not treat all articulations as if they respond to the
+same MIDI performance data.
+
+General Spitfire behavior used here:
+
+- **Long/sustained articulations**: primary dynamics = **CC1**.
+- **Short articulations**: primary dynamics = **note velocity**.
+- **CC11 Expression**: overall level trim on all articulations.
+- **CC21 Vibrato**: articulation-dependent. Use it only where the selected
+  articulation actually exposes useful vibrato states; do not assume that the
+  visible Vibrato controller means every articulation responds.
+
+| MIDI | Articulation | Primary dynamics | CC21 Vibrato |
+|---:|---|---|---|
+| 0 | Spiccato | Velocity | No practical use expected |
+| 1 | Staccato | Velocity | No practical use expected |
+| 2 | Pizzicato | Velocity | No |
+| 3 | Pizzicato Bartok | Velocity | No |
+| 4 | Col Legno | Velocity | No practical use expected |
+| 5 | Short Harmonics | Velocity | No practical use expected |
+| 6 | Long | CC1 | **Yes — confirmed** |
+| 7 | Marcato Attack | Velocity (attack) | No practical use expected |
+| 8 | Long Flautando | CC1 | **No — confirmed** |
+| 9 | Long Harmonics | CC1 | **No — confirmed** |
+| 10 | Unmeasured Tremolo | CC1 | Do not assume; verify |
+| 11 | Measured Tremolo (150 bpm) | CC1 | Do not assume; verify |
+| 12 | Trill Major 2nd | CC1 | Do not assume; verify |
+| 13 | Trill Minor 2nd | CC1 | Do not assume; verify |
+
+### AI rule
+
+- For `Long`, shape musical dynamics with **CC1**, then use **CC11** only for
+  additional level shaping. CC21 can be used for vibrato.
+- For `Spiccato`, `Staccato`, `Pizzicato`, Bartok pizzicato, Col Legno and
+  other short attacks, shape intensity primarily with **velocity**, not CC1.
+- `Long Flautando` and `Long Harmonics` were checked in the user's running
+  Sacconi patch and **do not respond to CC21**.
+- Tremolo and Trill articulations are treated as non-CC21 techniques for AI
+  generation; do not add vibrato automation to them.
+
 ## Kontakt UI notes learned along the way
 
 - The small red/blue keyboard on the instrument header (red = keyswitch zone,

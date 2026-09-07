@@ -256,6 +256,85 @@ including:
 These are continuous controls and are separate from the articulation
 keyswitch notes above.
 
+## Performance-control rules for AI
+
+The keyswitch chooses the technique; **CC/velocity behavior is a separate
+property of that technique**.
+
+Spitfire's standard behavior for these Kontakt orchestral patches is:
+
+- **Long / sustained techniques** → primary dynamics from **CC1**.
+- **Short techniques** → primary dynamics from **note velocity** by default.
+- **CC11 Expression** → overall level trim, independent of timbral dynamics.
+- **CC21 Vibrato** → only meaningful when the selected technique contains a
+  usable vibrato mapping. Do not assume all Long variants respond.
+- `Long Progressive Vib` already contains a recorded progressive-vibrato
+  behavior; do not automatically add CC21 on top of it.
+- Harmonics, Flautando, Sul Pont, Tremolo and Trills must not be assumed to
+  respond usefully to CC21 merely because the global Vibrato fader is visible.
+
+### Control classification
+
+| Technique family / name | Primary dynamics | CC21 Vibrato rule |
+|---|---|---|
+| Long | CC1 | **CC21 works — confirmed** |
+| Long CS | CC1 | **CC21 works — confirmed** |
+| Long Flautando | CC1 | **CC21 does not work — confirmed** |
+| Long Harmonics | CC1 | **CC21 does not work — confirmed** |
+| Long Progressive Vib | CC1 | **Do not add by default; vibrato is baked into the articulation** |
+| Long Sul Pont | CC1 | **CC21 does not work — confirmed** |
+| Long Tremolo | CC1 | Do not assume; verify |
+| Trill (Major 2nd) | CC1 | Do not assume; verify |
+| Trill (Minor 2nd) | CC1 | Do not assume; verify |
+| Short Staccato | Velocity | No practical use expected |
+| Short Spiccato | Velocity | No practical use expected |
+| Short Pizzicato | Velocity | No |
+| Short Bartok Pizz | Velocity | No |
+| Short Col Legno | Velocity | No practical use expected |
+| Short Harmonics | Velocity | No practical use expected |
+| Short Brushed Baroque CS | Velocity | No practical use expected |
+| Short Noise Staccatissimo | Velocity | No practical use expected |
+| Short Mandolin Pizzicato | Velocity | No |
+| Short Pizzicato Undamped | Velocity | No |
+
+### AI usage examples
+
+```text
+Technique: Long
+Dynamics: automate CC1
+Vibrato: CC21 may be automated
+Expression: CC11 only for extra level shaping
+Velocity: do not use as the main dynamic control
+```
+
+```text
+Technique: Short Spiccato
+Dynamics: note velocity
+Vibrato: none
+Expression: CC11 only if additional level trim is needed
+CC1: do not use as the main dynamic control
+```
+
+```text
+Technique: Long Progressive Vib
+Dynamics: automate CC1
+Vibrato: do not add CC21 by default
+Reason: progressive vibrato is part of the recorded articulation
+```
+
+Confirmed in the user's running Solo Strings patches:
+
+- Long — CC21 works.
+- Long CS — CC21 works.
+- Long Flautando — CC21 does not work.
+- Long Harmonics — CC21 does not work.
+- Long Sul Pont — CC21 does not work.
+- Long-family articulations respond to CC1 for dynamics.
+
+For AI generation, use CC21 only on `Long` and `Long CS` among the checked
+main long articulations above. Do not add CC21 to Flautando, Harmonics or
+Sul Pont.
+
 ## Source / verification notes
 
 - Spitfire Solo Strings User Manual V3.3, including the articulation appendix.
