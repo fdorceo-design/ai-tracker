@@ -16,6 +16,13 @@ Send a Note On (velocity doesn't matter, use e.g. 0.8) on the keyswitch note
 sticky (stay active until the next keyswitch is sent). A short/zero-length
 note is enough; note-off timing doesn't matter for triggering the switch.
 
+**Give the keyswitch a `startBeat` genuinely earlier than the note it should
+affect (e.g. 0.05-0.1 beat) — never the same `startBeat`.** See
+[CLAUDE.md](CLAUDE.md)'s composition conventions for why: same-beat ordering
+relies on insertion order into the notes list, which is easy to get backwards
+by accident (e.g. generating keyswitches in a pass that runs after the
+melody notes).
+
 ## All four instruments (same layout, verified for Violin 1)
 
 Violin 1, Violin 2, and Cello have all 14 rows; Viola has 12 (no trills).
