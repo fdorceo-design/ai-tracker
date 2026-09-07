@@ -1,3 +1,5 @@
+[![AI Tracker](ai-tracker-banner.png)](https://github.com/fdorceo-design/ai-tracker)
+
 # AI Tracker
 
 A Windows tracker-style sequencer and VSTi/Kontakt host, built so an AI can
