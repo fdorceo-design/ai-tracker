@@ -46,7 +46,11 @@ Prebuilt binaries are also available as a zip in the repo — it only needs
 `AI Tracker.exe` and `AiTrackerPluginServer.exe` together in the same
 folder to run.
 
+**[⬇ Download AI Tracker.zip](https://github.com/fdorceo-design/ai-tracker/raw/master/AI%20Tracker.zip)**
+
 ビルド済みバイナリもリポジトリ内のZIPとして配布しています — `AI Tracker.exe` と `AiTrackerPluginServer.exe` を同じフォルダに置くだけで動作します。
+
+**[⬇ AI Tracker.zip を直接ダウンロード](https://github.com/fdorceo-design/ai-tracker/raw/master/AI%20Tracker.zip)**
 
 ## License / ライセンス
 
