@@ -94,6 +94,10 @@ target_link_libraries(AiTrackerPluginServer PRIVATE
     juce::juce_recommended_warning_flags
 )
 
+if (WIN32)
+    target_link_libraries(AiTrackerPluginServer PRIVATE dbghelp)
+endif()
+
 # The main app locates AiTrackerPluginServer.exe next to its own binary at
 # runtime, so copy it into AiTracker's output directory after each build.
 add_custom_command(TARGET AiTracker POST_BUILD

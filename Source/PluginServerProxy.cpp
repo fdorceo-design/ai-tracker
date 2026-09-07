@@ -13,6 +13,13 @@ namespace
     {
         return "AiTrackerPlugin_" + juce::Uuid().toString();
     }
+
+    juce::String quoteIfNeeded(const juce::String& arg)
+    {
+        if (!arg.containsAnyOf(" \t\""))
+            return arg;
+        return "\"" + arg.replace("\"", "\\\"") + "\"";
+    }
 }
 
 PluginServerProxy::PluginServerProxy()
@@ -65,6 +72,63 @@ void PluginServerProxy::handleMessage(const juce::MemoryBlock& mb)
     }
 }
 
+bool PluginServerProxy::launchChildProcess(const juce::String& commandLine)
+{
+#if JUCE_WINDOWS
+    STARTUPINFOW startupInfo {};
+    startupInfo.cb = sizeof(startupInfo);
+
+    // Raw CreateProcess (bInheritHandles=FALSE, no CREATE_NO_WINDOW) instead
+    // of juce::ChildProcess -- see the comment on processInfo in the header
+    // for why: JUCE's implementation unconditionally passes
+    // CREATE_NO_WINDOW + STARTF_USESTDHANDLES, which Kontakt 8 refuses to
+    // instantiate under (isolated and confirmed: identical code launched as
+    // a normal process succeeds every time; via juce::ChildProcess it fails
+    // every time).
+    // EXPERIMENT: also try to break away from any Job Object this process
+    // belongs to (e.g. a dev-tool sandbox), in case that -- not the window
+    // station -- is what Kontakt's init reacts to. If the job doesn't
+    // permit breakaway, CreateProcess just fails with this flag and we
+    // retry without it.
+    bool ok = CreateProcessW(nullptr, const_cast<LPWSTR>(commandLine.toWideCharPointer()),
+                              nullptr, nullptr, FALSE, CREATE_UNICODE_ENVIRONMENT | CREATE_BREAKAWAY_FROM_JOB,
+                              nullptr, nullptr, &startupInfo, &processInfo)
+         != FALSE;
+    if (!ok)
+    {
+        ok = CreateProcessW(nullptr, const_cast<LPWSTR>(commandLine.toWideCharPointer()),
+                             nullptr, nullptr, FALSE, CREATE_UNICODE_ENVIRONMENT,
+                             nullptr, nullptr, &startupInfo, &processInfo)
+             != FALSE;
+    }
+    if (ok)
+    {
+        processStarted = true;
+        CloseHandle(processInfo.hThread);
+        processInfo.hThread = nullptr;
+    }
+    return ok;
+#else
+    juce::ignoreUnused(commandLine);
+    return false;
+#endif
+}
+
+void PluginServerProxy::terminateChildProcessIfRunning()
+{
+#if JUCE_WINDOWS
+    if (!processStarted)
+        return;
+
+    if (WaitForSingleObject(processInfo.hProcess, 2000) == WAIT_TIMEOUT)
+        TerminateProcess(processInfo.hProcess, 1);
+
+    CloseHandle(processInfo.hProcess);
+    processInfo = {};
+    processStarted = false;
+#endif
+}
+
 void PluginServerProxy::loadPlugin(const juce::File& pluginFile, double sampleRate, int blockSize,
                                     const std::function<void(juce::String)>& onError)
 {
@@ -92,23 +156,17 @@ void PluginServerProxy::loadPlugin(const juce::File& pluginFile, double sampleRa
         return;
     }
 
-    juce::StringArray args;
-    args.add(serverExe.getFullPathName());
-    args.add("--pipe");
-    args.add(pipeName);
-    args.add("--plugin");
-    args.add(pluginFile.getFullPathName());
-    args.add("--samplerate");
-    args.add(juce::String(sampleRate, 0));
-    args.add("--blocksize");
-    args.add(juce::String(blockSize));
+    juce::String commandLine;
+    commandLine << quoteIfNeeded(serverExe.getFullPathName())
+                << " --pipe " << pipeName
+                << " --plugin " << quoteIfNeeded(pluginFile.getFullPathName())
+                << " --samplerate " << juce::String(sampleRate, 0)
+                << " --blocksize " << juce::String(blockSize);
 
-    childProcess = std::make_unique<juce::ChildProcess>();
-    if (!childProcess->start(args))
+    if (!launchChildProcess(commandLine))
     {
         onError("Failed to launch AiTrackerPluginServer.exe");
         connection->disconnect();
-        childProcess.reset();
         return;
     }
 
@@ -136,13 +194,7 @@ void PluginServerProxy::closePlugin()
     if (connection != nullptr)
         connection->disconnect();
 
-    if (childProcess != nullptr)
-    {
-        childProcess->waitForProcessToFinish(2000);
-        if (childProcess->isRunning())
-            childProcess->kill();
-        childProcess.reset();
-    }
+    terminateChildProcessIfRunning();
 
     loaded = false;
     pluginName.clear();

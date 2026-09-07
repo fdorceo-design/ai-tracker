@@ -101,6 +101,26 @@ void AudioEngine::setInstrumentIdentity(int trackId, juce::String name, juce::St
     if (auto* track = findTrack(trackId)) track->setInstrumentIdentity(std::move(name), std::move(path));
 }
 
+bool AudioEngine::routeToExternalMidi(int trackId, const juce::String& deviceName)
+{
+    const juce::ScopedLock lock(tracksLock);
+    auto* track = findTrack(trackId);
+    return track != nullptr && track->routeToExternalMidi(deviceName);
+}
+
+juce::StringArray AudioEngine::getAvailableMidiOutputDevices()
+{
+    juce::StringArray names;
+    for (const auto& device : juce::MidiOutput::getAvailableDevices())
+        names.add(device.name);
+    return names;
+}
+
+bool AudioEngine::launchExternalApp(const juce::File& executable)
+{
+    return executable.existsAsFile() && executable.startAsProcess();
+}
+
 bool AudioEngine::isPluginLoaded(int trackId)
 {
     const juce::ScopedLock lock(tracksLock);

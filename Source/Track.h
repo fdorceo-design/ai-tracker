@@ -1,11 +1,18 @@
 #pragma once
 
-#include <juce_audio_basics/juce_audio_basics.h>
+#include <juce_audio_devices/juce_audio_devices.h>
 #include "PluginServerProxy.h"
 
-// One instrument slot. The plugin runs out-of-process (PluginServerProxy)
-// so a crash in it can't take the host down; this class just forwards
-// load/note/render calls and mixes the proxy's rendered audio in.
+// One instrument slot. Normally the plugin runs out-of-process
+// (PluginServerProxy) so a crash in it can't take the host down. Some
+// plugins (Kontakt 8, UJAM BM-* and others were found to reliably fail to
+// instantiate no matter how they're hosted -- root cause undiagnosed after
+// extensive investigation) can instead be routed to an external MIDI
+// device: run the real standalone app separately (see
+// AudioEngine::launchExternalApp) and send it notes over a virtual MIDI
+// cable (e.g. loopMIDI). Audio in that mode plays directly from the
+// external app to the real output device, not through this host, so
+// renderNextBlock is a no-op for an externally-routed track.
 class Track
 {
 public:
@@ -23,16 +30,24 @@ public:
 
     void loadPlugin(const juce::File& file, double sampleRate, int blockSize,
                      const std::function<void(juce::String)>& onError);
-    bool isPluginLoaded() const { return proxy.isPluginLoaded(); }
+    bool isPluginLoaded() const { return externalMidiOutput != nullptr || proxy.isPluginLoaded(); }
     juce::String getPluginName() const;
 
     void showEditorWindow();
+
+    // Switches this track to send notes to a named external MIDI output
+    // device instead of the in-process/child-process plugin path. Closes
+    // any currently loaded VST3 first. Returns false if no MIDI output
+    // device with that name is currently available.
+    bool routeToExternalMidi(const juce::String& deviceName);
+    bool isExternalMidiRouted() const { return externalMidiOutput != nullptr; }
 
     void prepareToPlay(double sampleRate, int blockSize);
     void releaseResources();
 
     // Audio-thread only: pulls queued MIDI, runs the plugin, and adds its
-    // output into `outputBuffer` (does not clear it).
+    // output into `outputBuffer` (does not clear it). No-op when routed to
+    // an external MIDI device.
     void renderNextBlock(juce::AudioBuffer<float>& outputBuffer, int numSamples);
 
     void sendNoteOn(int channel, int noteNumber, float velocity);
@@ -43,6 +58,8 @@ private:
     juce::String name;
     juce::String instrumentName, pluginPath;
     PluginServerProxy proxy;
+    std::unique_ptr<juce::MidiOutput> externalMidiOutput;
+    juce::String externalMidiDeviceName;
     double currentSampleRate = 44100.0;
     int currentBlockSize = 512;
 };

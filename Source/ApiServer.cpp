@@ -163,6 +163,53 @@ bool ApiServer::start(int portToUse)
         sendOk(res, true);
     });
 
+    server->Get("/api/midi-outputs", [this](const httplib::Request&, httplib::Response& res)
+    {
+        juce::Array<juce::var> arr;
+        for (const auto& name : AudioEngine::getAvailableMidiOutputDevices())
+            arr.add(juce::var(name));
+        sendJson(res, juce::var(arr));
+    });
+
+    server->Post(R"(/api/tracks/(\d+)/midi-output)", [this](const httplib::Request& req, httplib::Response& res)
+    {
+        const int trackId = std::stoi(req.matches[1].str());
+        auto parsed = juce::JSON::parse(juce::String(req.body));
+        auto device = parsed.getProperty("device", juce::var()).toString();
+        if (device.isEmpty())
+        {
+            auto* obj = new juce::DynamicObject();
+            obj->setProperty("ok", false);
+            obj->setProperty("error", "missing 'device'");
+            sendJson(res, juce::var(obj), 400);
+            return;
+        }
+
+        const bool ok = engine.routeToExternalMidi(trackId, device);
+        auto* obj = new juce::DynamicObject();
+        obj->setProperty("ok", ok);
+        if (!ok)
+            obj->setProperty("error", "MIDI output device not found: " + device);
+        sendJson(res, juce::var(obj), ok ? 200 : 400);
+    });
+
+    server->Post("/api/launch-app", [this](const httplib::Request& req, httplib::Response& res)
+    {
+        auto parsed = juce::JSON::parse(juce::String(req.body));
+        auto path = parsed.getProperty("path", juce::var()).toString();
+        if (path.isEmpty() || !juce::File::isAbsolutePath(path))
+        {
+            auto* obj = new juce::DynamicObject();
+            obj->setProperty("ok", false);
+            obj->setProperty("error", "missing or invalid 'path'");
+            sendJson(res, juce::var(obj), 400);
+            return;
+        }
+
+        const bool ok = AudioEngine::launchExternalApp(juce::File(path));
+        sendOk(res, ok);
+    });
+
     server->Get("/api/notes", [this](const httplib::Request&, httplib::Response& res)
     {
         juce::Array<juce::var> arr;

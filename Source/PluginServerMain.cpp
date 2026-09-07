@@ -5,11 +5,48 @@
 
 #if JUCE_WINDOWS
  #include <windows.h>
+ #include <DbgHelp.h>
+ #pragma comment(lib, "dbghelp.lib")
 #endif
 
 namespace
 {
 #if JUCE_WINDOWS
+    // Process-wide (any thread, unlike __try/__except which is per-call-site
+    // and per-thread) so it can catch Kontakt et al. crashing on a thread
+    // they spawn internally during their own instantiation -- exactly the
+    // case the SEH guard below cannot reach. Kept to raw Win32 calls (no
+    // JUCE/STL allocation) since it runs in a crash context.
+    LONG WINAPI writeMinidumpAndContinue(EXCEPTION_POINTERS* exceptionPointers)
+    {
+        const DWORD pid = GetCurrentProcessId();
+
+        wchar_t modulePath[MAX_PATH]{};
+        GetModuleFileNameW(nullptr, modulePath, MAX_PATH);
+        wchar_t* lastSlash = wcsrchr(modulePath, L'\\');
+        if (lastSlash != nullptr)
+            *lastSlash = 0;
+
+        wchar_t dumpPath[MAX_PATH]{};
+        wsprintfW(dumpPath, L"%s\\PluginServerCrash_%lu.dmp", modulePath, pid);
+
+        HANDLE file = CreateFileW(dumpPath, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+        if (file != INVALID_HANDLE_VALUE)
+        {
+            MINIDUMP_EXCEPTION_INFORMATION mei;
+            mei.ThreadId = GetCurrentThreadId();
+            mei.ExceptionPointers = exceptionPointers;
+            mei.ClientPointers = FALSE;
+
+            MiniDumpWriteDump(GetCurrentProcess(), pid, file,
+                               (MINIDUMP_TYPE) (MiniDumpWithDataSegs | MiniDumpWithThreadInfo),
+                               exceptionPointers != nullptr ? &mei : nullptr, nullptr, nullptr);
+            CloseHandle(file);
+        }
+
+        return EXCEPTION_EXECUTE_HANDLER;
+    }
+
     int filterHardCrash(unsigned int code)
     {
         return (code == EXCEPTION_ACCESS_VIOLATION || code == EXCEPTION_STACK_OVERFLOW)
@@ -94,6 +131,10 @@ public:
 
     void initialise(const juce::String& commandLine) override
     {
+#if JUCE_WINDOWS
+        SetUnhandledExceptionFilter(writeMinidumpAndContinue);
+#endif
+
         const auto args = juce::StringArray::fromTokens(commandLine, true);
 
         juce::String pipeName, pluginPath;
@@ -108,48 +149,112 @@ public:
             else if (args[i] == "--blocksize") blockSize = args[i + 1].getIntValue();
         }
 
-        connection = std::make_unique<PluginServerConnection>();
-        connection->onDisconnect = [this] { quit(); };
-        connection->onMessage = [this](const juce::MemoryBlock& mb) { handleMessage(mb); };
+        // One log file per child process (pid-suffixed), flushed on every
+        // call, so if this process dies mid-load the last line written is
+        // the last thing it was doing -- the crash itself gives no other
+        // diagnostic (no WER report has been produced for any of these).
+        const auto pidForLog = (unsigned long) GetCurrentProcessId();
+        const auto logFile = juce::File::getSpecialLocation(juce::File::currentExecutableFile)
+                                  .getSiblingFile("PluginServerLog_" + juce::String(pidForLog) + ".txt");
+        fileLogger.reset(new juce::FileLogger(logFile, "AiTrackerPluginServer log"));
 
-        // See the matching comment in PluginServerProxy::loadPlugin: this
-        // timeout applies to writes too (this side's audioResult sends),
-        // so it must stay finite rather than infinite.
-        if (pipeName.isEmpty() || !connection->connectToPipe(pipeName, 4000))
+        log("start: plugin=\"" + pluginPath + "\" pipe=\"" + pipeName + "\" sr=" + juce::String(sampleRate)
+            + " bs=" + juce::String(blockSize));
+
+        this->pipeName = pipeName;
+
+        formatManager.addDefaultFormats();
+        log("addDefaultFormats: done");
+
+        // The pipe/PluginServerConnection is deliberately not created until
+        // after the plugin has finished loading (see connectAndSend) --
+        // one less thing running concurrently with plugin instantiation.
+        // The actual root cause of Kontakt/BM-RICO/Synthesizer V failing to
+        // load was traced to the *parent* process: PluginServerProxy was
+        // launching this exe via juce::ChildProcess, which unconditionally
+        // passes CREATE_NO_WINDOW: some copy-protected plugins refuse to
+        // instantiate under a windowless/headless-looking process. Fixed on
+        // the proxy side with a raw CreateProcess call instead.
+        startLoadingPlugin(pluginPath, sampleRate, blockSize);
+    }
+
+    void log(const juce::String& msg)
+    {
+        if (fileLogger != nullptr)
+            fileLogger->logMessage("[thread=" + juce::String((juce::pointer_sized_int) GetCurrentThreadId())
+                                    + "] " + msg);
+    }
+
+    void startLoadingPlugin(const juce::String& pluginPath, double sampleRate, int blockSize)
+    {
+        juce::OwnedArray<juce::PluginDescription> descriptions;
+        log("findAllTypesForFile: before");
+        for (auto* format : formatManager.getFormats())
+            format->findAllTypesForFile(descriptions, pluginPath);
+        log("findAllTypesForFile: after, found " + juce::String(descriptions.size()));
+
+        if (descriptions.isEmpty())
         {
-            quit();
+            log("no PluginDescription found, aborting");
+            connectAndSend(PluginServerProtocol::buildLoadResult(false, {}, "No plugin found in " + pluginPath));
             return;
         }
 
-        formatManager.addDefaultFormats();
-
-        juce::OwnedArray<juce::PluginDescription> descriptions;
-        for (auto* format : formatManager.getFormats())
-            format->findAllTypesForFile(descriptions, pluginPath);
-
         juce::String error;
-        juce::AudioPluginInstance* raw = nullptr;
         bool crashed = false;
-
-        if (descriptions.isEmpty())
-            error = "No plugin found in " + pluginPath;
-        else
-            raw = createInstanceGuarded(&formatManager, descriptions[0], sampleRate, blockSize, &error, &crashed);
+        log("createPluginInstance (guarded): before");
+        std::unique_ptr<juce::AudioPluginInstance> instance(
+            createInstanceGuarded(&formatManager, descriptions[0], sampleRate, blockSize, &error, &crashed));
+        log(juce::String("createPluginInstance (guarded): after, instance=")
+            + (instance != nullptr ? "non-null" : "null") + " crashed=" + (crashed ? "true" : "false") + " error=\""
+            + error + "\"");
 
         if (crashed)
             error = "Plugin crashed while loading";
 
-        if (raw != nullptr)
+        finishLoadingPlugin(std::move(instance), error, sampleRate, blockSize);
+    }
+
+    void finishLoadingPlugin(std::unique_ptr<juce::AudioPluginInstance> instance, const juce::String& error,
+                              double sampleRate, int blockSize)
+    {
+        if (instance == nullptr)
         {
-            processor.reset(raw);
-            processor->setRateAndBufferSizeDetails(sampleRate, blockSize);
-            processor->prepareToPlay(sampleRate, blockSize);
-            connection->sendMessage(PluginServerProtocol::buildLoadResult(true, processor->getName(), {}));
+            connectAndSend(PluginServerProtocol::buildLoadResult(false, {}, error));
+            return;
         }
-        else
+
+        processor = std::move(instance);
+        log("setRateAndBufferSizeDetails: before");
+        processor->setRateAndBufferSizeDetails(sampleRate, blockSize);
+        log("setRateAndBufferSizeDetails: after");
+        log("prepareToPlay: before");
+        processor->prepareToPlay(sampleRate, blockSize);
+        log("prepareToPlay: after");
+        connectAndSend(PluginServerProtocol::buildLoadResult(true, processor->getName(), {}));
+    }
+
+    // Only now (load already finished, success or failure) does a
+    // PluginServerConnection -- and its background ConnectionThread -- get
+    // created at all.
+    void connectAndSend(const juce::MemoryBlock& resultMessage)
+    {
+        connection = std::make_unique<PluginServerConnection>();
+        connection->onDisconnect = [this] { log("connection lost -> quit()"); quit(); };
+        connection->onMessage = [this](const juce::MemoryBlock& mb) { handleMessage(mb); };
+
+        log("connectToPipe: before");
+        if (pipeName.isEmpty() || !connection->connectToPipe(pipeName, 4000))
         {
-            connection->sendMessage(PluginServerProtocol::buildLoadResult(false, {}, error));
+            log("connectToPipe: failed, quitting");
+            quit();
+            return;
         }
+        log("connectToPipe: connected");
+
+        log("sendMessage(loadResult): before");
+        connection->sendMessage(resultMessage);
+        log("sendMessage(loadResult): after");
     }
 
     void shutdown() override
@@ -206,6 +311,8 @@ public:
     }
 
 private:
+    std::unique_ptr<juce::FileLogger> fileLogger;
+    juce::String pipeName;
     std::unique_ptr<PluginServerConnection> connection;
     juce::AudioPluginFormatManager formatManager;
     std::unique_ptr<juce::AudioPluginInstance> processor;

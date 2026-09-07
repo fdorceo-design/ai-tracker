@@ -27,6 +27,20 @@ public:
     juce::String getPluginName(int trackId);
     void showEditorWindow(int trackId);
 
+    // Fallback path for plugins that reliably fail to instantiate however
+    // they're hosted (Kontakt 8, UJAM BM-* and others -- root cause
+    // undiagnosed): route the track's notes to a named external MIDI
+    // output device instead (e.g. a loopMIDI virtual cable feeding a
+    // separately-running standalone synth). Returns false if no such
+    // device is currently available.
+    bool routeToExternalMidi(int trackId, const juce::String& deviceName);
+    static juce::StringArray getAvailableMidiOutputDevices();
+
+    // Launches a completely independent process (e.g. a standalone synth
+    // app) -- not tracked or crash-isolated by this engine at all, just a
+    // convenience so the API can start e.g. Kontakt 8 Standalone.
+    static bool launchExternalApp(const juce::File& executable);
+
     void sendNoteOn(int trackId, int channel, int noteNumber, float velocity);
     void sendNoteOff(int trackId, int channel, int noteNumber);
 
