@@ -26,6 +26,7 @@ public:
 
 private:
     void timerCallback() override;
+    void exportMidiClicked();
 
     AudioEngine engine;
     Sequencer sequencer { engine };
@@ -37,6 +38,8 @@ private:
     juce::TextButton pauseButton{"Pause"};
     juce::TextButton stopButton{"Stop"};
     juce::TextButton panicButton{"Panic"};
+    juce::TextButton exportMidiButton{"Export MIDI..."};
+    std::unique_ptr<juce::FileChooser> exportFileChooser;
     juce::Label bpmLabel;
     juce::Label timeSignatureLabel;
     juce::Label positionLabel;

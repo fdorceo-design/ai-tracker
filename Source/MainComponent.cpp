@@ -106,6 +106,9 @@ MainComponent::MainComponent()
     panicButton.onClick = [this] { sequencer.stop(); engine.panicAllTracks(); };
     addAndMakeVisible(panicButton);
 
+    exportMidiButton.onClick = [this] { exportMidiClicked(); };
+    addAndMakeVisible(exportMidiButton);
+
     bpmLabel.setJustificationType(juce::Justification::centred);
     bpmLabel.setEditable(false, true, false);
     bpmLabel.setColour(juce::Label::backgroundColourId, gbDark);
@@ -189,6 +192,30 @@ MainComponent::~MainComponent()
     engine.panicAllTracks();
 }
 
+void MainComponent::exportMidiClicked()
+{
+    const auto defaultFile = juce::File::getSpecialLocation(juce::File::userDocumentsDirectory)
+                                  .getChildFile("AI Tracker Session.mid");
+    exportFileChooser = std::make_unique<juce::FileChooser>("Export MIDI", defaultFile, "*.mid");
+    exportFileChooser->launchAsync(
+        juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::warnAboutOverwriting,
+        [this](const juce::FileChooser& chooser)
+        {
+            auto file = chooser.getResult();
+            if (file == juce::File())
+                return;
+
+            const bool ok = sequencer.exportToMidiFile(file);
+            juce::NativeMessageBox::showAsync(
+                juce::MessageBoxOptions()
+                    .withIconType(ok ? juce::MessageBoxIconType::InfoIcon : juce::MessageBoxIconType::WarningIcon)
+                    .withTitle(ok ? "Exported" : "Export failed")
+                    .withMessage(ok ? file.getFullPathName() : "Could not write to " + file.getFullPathName())
+                    .withButton("OK"),
+                nullptr);
+        });
+}
+
 void MainComponent::paint(juce::Graphics& g)
 {
     g.fillAll(getLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId));
@@ -214,6 +241,8 @@ void MainComponent::resized()
     bpmLabel.setBounds(topRow.removeFromLeft(90));
     topRow.removeFromLeft(10);
     timeSignatureLabel.setBounds(topRow.removeFromLeft(60));
+    topRow.removeFromLeft(10);
+    exportMidiButton.setBounds(topRow.removeFromLeft(120));
     area.removeFromTop(10);
 
     positionLabel.setBounds(area.removeFromTop(24));
