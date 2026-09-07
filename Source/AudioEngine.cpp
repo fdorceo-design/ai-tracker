@@ -28,6 +28,20 @@ int AudioEngine::addTrack(juce::String name)
     const int id = nextTrackId++;
     auto track = std::make_unique<Track>(id, name.isNotEmpty() ? name : ("Track " + juce::String(id)));
     track->prepareToPlay(sampleRate, blockSize);
+    // Default MIDI channel to the lowest one no existing track currently
+    // uses (1, 2, 3... when added in order with nothing removed, but also
+    // backfills a channel freed by removing an earlier track) rather than
+    // always 1 -- a fresh multi-track setup (e.g. one standalone instrument
+    // per channel) starts already addressable instead of needing every
+    // track's channel set by hand. Falls back to 1 if all 16 are taken.
+    int freeChannel = 1;
+    for (int candidate = 1; candidate <= 16; ++candidate)
+    {
+        const bool inUse = std::any_of(tracks.begin(), tracks.end(),
+                                        [candidate](const std::unique_ptr<Track>& t) { return t->getMidiChannel() == candidate; });
+        if (!inUse) { freeChannel = candidate; break; }
+    }
+    track->setMidiChannel(freeChannel);
     tracks.push_back(std::move(track));
     return id;
 }
