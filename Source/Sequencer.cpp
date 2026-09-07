@@ -70,6 +70,36 @@ bool Sequencer::setNotePitch(int id, int newPitch)
     return true;
 }
 
+bool Sequencer::setNoteBeat(int id, double newStartBeat)
+{
+    std::lock_guard<std::mutex> lock(noteMutex);
+    auto it = std::find_if(notes.begin(), notes.end(), [id](const SequencerNote& n) { return n.id == id; });
+    if (it == notes.end())
+        return false;
+    it->startBeat = juce::jmax(0.0, newStartBeat);
+    return true;
+}
+
+bool Sequencer::setNoteLength(int id, double newLengthBeats)
+{
+    std::lock_guard<std::mutex> lock(noteMutex);
+    auto it = std::find_if(notes.begin(), notes.end(), [id](const SequencerNote& n) { return n.id == id; });
+    if (it == notes.end())
+        return false;
+    it->lengthBeats = juce::jmax(0.001, newLengthBeats);
+    return true;
+}
+
+bool Sequencer::setNoteVelocity(int id, float newVelocity)
+{
+    std::lock_guard<std::mutex> lock(noteMutex);
+    auto it = std::find_if(notes.begin(), notes.end(), [id](const SequencerNote& n) { return n.id == id; });
+    if (it == notes.end())
+        return false;
+    it->velocity = juce::jlimit(0.0f, 1.0f, newVelocity);
+    return true;
+}
+
 void Sequencer::clearNotes()
 {
     std::lock_guard<std::mutex> lock(noteMutex);
@@ -101,6 +131,11 @@ void Sequencer::stop()
 void Sequencer::setBpm(double newBpm)
 {
     bpm = juce::jmax(1.0, newBpm);
+}
+
+void Sequencer::setBeatsPerBar(int newBeatsPerBar)
+{
+    beatsPerBar = juce::jlimit(1, 32, newBeatsPerBar);
 }
 
 void Sequencer::setLoop(bool enabled, double startBeat, double endBeat)

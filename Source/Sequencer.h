@@ -30,6 +30,9 @@ public:
     int addNote(int trackId, int pitch, float velocity, double startBeat, double lengthBeats);
     bool removeNote(int id);
     bool setNotePitch(int id, int newPitch);
+    bool setNoteBeat(int id, double newStartBeat);
+    bool setNoteLength(int id, double newLengthBeats);
+    bool setNoteVelocity(int id, float newVelocity);
     void clearNotes();
     std::vector<SequencerNote> getNotes() const;
 
@@ -39,6 +42,11 @@ public:
 
     void setBpm(double newBpm);
     double getBpm() const { return bpm.load(); }
+
+    // Numerator only (quarter-note beat unit assumed, i.e. .../4). Affects
+    // bar-line placement in the tracker grid and nothing else yet.
+    void setBeatsPerBar(int newBeatsPerBar);
+    int getBeatsPerBar() const { return beatsPerBar.load(); }
 
     void setLoop(bool enabled, double startBeat, double endBeat);
     double getPositionBeats() const { return positionBeats.load(); }
@@ -68,6 +76,7 @@ private:
 
     std::atomic<bool> playing { false };
     std::atomic<double> bpm { 120.0 };
+    std::atomic<int> beatsPerBar { 4 };
     std::atomic<double> positionBeats { 0.0 };
 
     bool loopEnabled = false;

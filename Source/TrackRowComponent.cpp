@@ -5,6 +5,8 @@ TrackRowComponent::TrackRowComponent(AudioEngine& engineIn, int trackIdIn, std::
 {
     nameLabel.setText(engine.getTrackName(trackId), juce::dontSendNotification);
     nameLabel.setJustificationType(juce::Justification::centred);
+    nameLabel.setFont(juce::Font(juce::FontOptions(28.0f, juce::Font::bold)));
+    nameLabel.setMinimumHorizontalScale(1.0f);
     nameLabel.setEditable(false, true, false);
     nameLabel.onTextChange = [this] { engine.setTrackName(trackId, nameLabel.getText()); };
     addAndMakeVisible(nameLabel);
@@ -29,7 +31,7 @@ TrackRowComponent::TrackRowComponent(AudioEngine& engineIn, int trackIdIn, std::
 void TrackRowComponent::resized()
 {
     auto area = getLocalBounds().reduced(3);
-    nameLabel.setBounds(area.removeFromTop(20));
+    nameLabel.setBounds(area.removeFromTop(36));
     area.removeFromTop(2);
     statusLabel.setBounds(area.removeFromTop(28));
     area.removeFromTop(2);

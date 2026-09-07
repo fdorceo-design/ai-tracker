@@ -86,6 +86,7 @@ bool ApiServer::start(int portToUse)
         auto* transportObj = new juce::DynamicObject();
         transportObj->setProperty("playing", sequencer.isPlaying());
         transportObj->setProperty("bpm", sequencer.getBpm());
+        transportObj->setProperty("beatsPerBar", sequencer.getBeatsPerBar());
         transportObj->setProperty("positionBeats", sequencer.getPositionBeats());
         obj->setProperty("transport", juce::var(transportObj));
 
@@ -249,6 +250,17 @@ bool ApiServer::start(int portToUse)
         auto* obj = new juce::DynamicObject();
         obj->setProperty("ok", true);
         obj->setProperty("bpm", sequencer.getBpm());
+        sendJson(res, juce::var(obj));
+    });
+
+    server->Post("/api/transport/timesignature", [this](const httplib::Request& req, httplib::Response& res)
+    {
+        auto parsed = juce::JSON::parse(juce::String(req.body));
+        const int beatsPerBar = (int) parsed.getProperty("beatsPerBar", 4);
+        sequencer.setBeatsPerBar(beatsPerBar);
+        auto* obj = new juce::DynamicObject();
+        obj->setProperty("ok", true);
+        obj->setProperty("beatsPerBar", sequencer.getBeatsPerBar());
         sendJson(res, juce::var(obj));
     });
 

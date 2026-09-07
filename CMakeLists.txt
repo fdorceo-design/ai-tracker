@@ -31,7 +31,8 @@ target_sources(AiTracker PRIVATE
     Source/Main.cpp
     Source/MainComponent.cpp
     Source/TrackRowComponent.cpp
-    Source/TrackerGridComponent.cpp
+    Source/NoteRowComponent.cpp
+    Source/TrackEventListComponent.cpp
     Source/TrackerContentComponent.cpp
     Source/Track.cpp
     Source/AudioEngine.cpp

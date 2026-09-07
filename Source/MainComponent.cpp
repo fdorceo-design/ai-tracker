@@ -5,8 +5,59 @@ namespace
     constexpr int apiPort = 8080;
 }
 
+namespace
+{
+    // Classic Game Boy / LSDj 4-shade green palette.
+    const juce::Colour gbDarkest  { 0xff0f380f };
+    const juce::Colour gbDark     { 0xff306230 };
+    const juce::Colour gbLight    { 0xff8bac0f };
+    const juce::Colour gbLightest { 0xff9bbc0f };
+
+    class LsdjLookAndFeel : public juce::LookAndFeel_V4
+    {
+    public:
+        juce::Font getTextButtonFont(juce::TextButton&, int buttonHeight) override
+        {
+            return juce::Font(juce::FontOptions(juce::jmin(22.0f, (float) buttonHeight * 0.7f)));
+        }
+    };
+
+    void applyLsdjPalette()
+    {
+        static LsdjLookAndFeel lsdjLookAndFeel;
+        juce::Desktop::getInstance().setDefaultLookAndFeel(&lsdjLookAndFeel);
+        auto& laf = lsdjLookAndFeel;
+        laf.setColour(juce::ResizableWindow::backgroundColourId, gbDarkest);
+        laf.setColour(juce::Label::textColourId, gbLightest);
+        laf.setColour(juce::Label::backgroundColourId, juce::Colours::transparentBlack);
+        laf.setColour(juce::TextButton::buttonColourId, gbDark);
+        laf.setColour(juce::TextButton::buttonOnColourId, gbLight);
+        laf.setColour(juce::TextButton::textColourOffId, gbLightest);
+        laf.setColour(juce::TextButton::textColourOnId, gbDarkest);
+        laf.setColour(juce::TextEditor::backgroundColourId, gbDark);
+        laf.setColour(juce::TextEditor::textColourId, gbLightest);
+        laf.setColour(juce::TextEditor::outlineColourId, gbLight);
+        laf.setColour(juce::TextEditor::focusedOutlineColourId, gbLightest);
+        laf.setColour(juce::TextEditor::highlightColourId, gbLight);
+        laf.setColour(juce::ScrollBar::thumbColourId, gbDark);
+        laf.setColour(juce::ScrollBar::backgroundColourId, gbDarkest);
+        laf.setColour(juce::DocumentWindow::backgroundColourId, gbDarkest);
+        laf.setColour(juce::ComboBox::backgroundColourId, gbDark);
+        laf.setColour(juce::ComboBox::textColourId, gbLightest);
+        laf.setColour(juce::ComboBox::outlineColourId, gbLight);
+        laf.setColour(juce::ComboBox::arrowColourId, gbLightest);
+        laf.setColour(juce::ComboBox::buttonColourId, gbDark);
+        laf.setColour(juce::PopupMenu::backgroundColourId, gbDarkest);
+        laf.setColour(juce::PopupMenu::textColourId, gbLightest);
+        laf.setColour(juce::PopupMenu::highlightedBackgroundColourId, gbDark);
+        laf.setColour(juce::PopupMenu::highlightedTextColourId, gbLightest);
+    }
+}
+
 MainComponent::MainComponent()
 {
+    applyLsdjPalette();
+
     titleLabel.setText("AI Tracker", juce::dontSendNotification);
     titleLabel.setJustificationType(juce::Justification::centred);
     titleLabel.setFont(juce::Font(20.0f));
@@ -20,6 +71,34 @@ MainComponent::MainComponent()
 
     stopButton.onClick = [this] { sequencer.stop(); };
     addAndMakeVisible(stopButton);
+
+    bpmLabel.setJustificationType(juce::Justification::centred);
+    bpmLabel.setEditable(false, true, false);
+    bpmLabel.setColour(juce::Label::backgroundColourId, gbDark);
+    bpmLabel.onTextChange = [this]
+    {
+        const auto value = bpmLabel.getText().retainCharacters("0123456789.").getDoubleValue();
+        if (value > 0.0)
+            sequencer.setBpm(value);
+        bpmLabel.setText("BPM " + juce::String(sequencer.getBpm(), 0), juce::dontSendNotification);
+    };
+    addAndMakeVisible(bpmLabel);
+
+    timeSignatureLabel.setJustificationType(juce::Justification::centred);
+    timeSignatureLabel.setEditable(false, true, false);
+    timeSignatureLabel.setColour(juce::Label::backgroundColourId, gbDark);
+    timeSignatureLabel.onTextChange = [this]
+    {
+        const auto numerator = timeSignatureLabel.getText().upToFirstOccurrenceOf("/", false, false)
+                                    .retainCharacters("0123456789").getIntValue();
+        if (numerator > 0)
+            sequencer.setBeatsPerBar(numerator);
+        timeSignatureLabel.setText(juce::String(sequencer.getBeatsPerBar()) + "/4", juce::dontSendNotification);
+    };
+    addAndMakeVisible(timeSignatureLabel);
+
+    bpmLabel.setText("BPM " + juce::String(sequencer.getBpm(), 0), juce::dontSendNotification);
+    timeSignatureLabel.setText(juce::String(sequencer.getBeatsPerBar()) + "/4", juce::dontSendNotification);
 
     positionLabel.setJustificationType(juce::Justification::centred);
     addAndMakeVisible(positionLabel);
@@ -60,9 +139,13 @@ void MainComponent::resized()
     auto topRow = area.removeFromTop(30);
     addTrackButton.setBounds(topRow.removeFromLeft(120));
     topRow.removeFromLeft(10);
-    playButton.setBounds(topRow.removeFromLeft((topRow.getWidth() - 10) / 2));
+    playButton.setBounds(topRow.removeFromLeft(80));
     topRow.removeFromLeft(10);
-    stopButton.setBounds(topRow);
+    stopButton.setBounds(topRow.removeFromLeft(80));
+    topRow.removeFromLeft(10);
+    bpmLabel.setBounds(topRow.removeFromLeft(90));
+    topRow.removeFromLeft(10);
+    timeSignatureLabel.setBounds(topRow.removeFromLeft(60));
     area.removeFromTop(10);
 
     positionLabel.setBounds(area.removeFromTop(24));
@@ -76,8 +159,13 @@ void MainComponent::timerCallback()
 {
     trackerContent.refreshTracks();
 
+    // Avoid stomping the label while the user is actively editing it.
+    if (bpmLabel.getCurrentTextEditor() == nullptr)
+        bpmLabel.setText("BPM " + juce::String(sequencer.getBpm(), 0), juce::dontSendNotification);
+    if (timeSignatureLabel.getCurrentTextEditor() == nullptr)
+        timeSignatureLabel.setText(juce::String(sequencer.getBeatsPerBar()) + "/4", juce::dontSendNotification);
+
     juce::String txt = sequencer.isPlaying() ? "Playing" : "Stopped";
-    txt << "  beat " << juce::String(sequencer.getPositionBeats(), 2)
-        << "  bpm " << juce::String(sequencer.getBpm(), 0);
+    txt << "  beat " << juce::String(sequencer.getPositionBeats(), 2);
     positionLabel.setText(txt, juce::dontSendNotification);
 }
