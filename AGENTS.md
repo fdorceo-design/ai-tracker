@@ -125,3 +125,9 @@ standalone app manually before AI Tracker is already running.
 - [Kontakt-PP013-Electric-Cellist-Keyswitches.md](Kontakt-PP013-Electric-Cellist-Keyswitches.md) —
   keyswitches and playable ranges for Peter Gregson Electric Cellist PP013,
   checked against the user's running instance.
+- [Ample-Sound-Keyswitches/](Ample-Sound-Keyswitches/README.md) — Ample
+  Sound bass/guitar/ukulele libraries (ABA, ABU, AGL, AEU, ABJ, ABJF).
+  Sourced from the official Ample Sound manual per instrument, not
+  empirically re-verified against a running instance. Uses `C4 = MIDI 60`
+  (same convention as BBCSO, not the Sacconi/Solo Strings/SSO/PP013
+  `C-2 = MIDI 0` convention).

@@ -83,3 +83,8 @@ permitted with attribution.
     (work in progress; **uses a different octave convention than the others**
     — read its own convention section before using it)
     (作業中。**他のファイルとはオクターブ表記の慣習が異なる**ので、使う前に自身の慣習説明の節を読んでください。)
+  - [Ample-Sound-Keyswitches/](Ample-Sound-Keyswitches/README.md) — Ample
+    Sound bass/guitar/ukulele libraries (ABA, ABU, AGL, AEU, ABJ, ABJF),
+    each sourced directly from the official Ample Sound manual for that
+    instrument. Uses `C4 = MIDI 60`.
+    (Ample Soundのベース/ギター/ウクレレ音源(ABA, ABU, AGL, AEU, ABJ, ABJF)。各ファイルとも公式Ample Soundマニュアルを出典としています。`C4 = MIDI 60` 表記を使用。)
