@@ -168,3 +168,12 @@ standalone app manually before AI Tracker is already running.
   factory keyswitch locations are not permanent. Always prefer
   articulation names plus whatever the running instance's Settings page
   currently shows over any fixed note number from this doc.
+- [Karoryfer-Keyswitches/](Karoryfer-Keyswitches/README.md) — Karoryfer
+  Samples products (Commercial/Free/Other_or_Legacy). Uses
+  `C4 = MIDI 60`. Deliberately narrow scope — only playable range,
+  keyswitch→articulation, and CC/mod-wheel/velocity behavior AI Tracker
+  actually needs. A range is only recorded when confirmed directly from
+  the product's SFZ (marked **SFZ verified**); where the SFZ delegates
+  to a missing `#include` mapping file, the range is left unset rather
+  than guessed — treat an unset range as genuinely unknown, not as an
+  oversight to fill in.

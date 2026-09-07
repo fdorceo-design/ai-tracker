@@ -126,3 +126,11 @@ permitted with attribution.
     location isn't necessarily permanent — the installed instrument's
     current mapping always takes precedence over this doc.
     (Westwood Instrumentsの音源(現行の単体製品16種)。**新しいWestwood製品ではキースイッチの全体的な有効/無効切り替えや、キーボード上の位置移動をユーザーが行える**ため、工場出荷時のキースイッチ位置が固定とは限りません — インストール済み音源の現在のマッピングが常にこのドキュメントより優先されます。)
+  - [Karoryfer-Keyswitches/](Karoryfer-Keyswitches/README.md) — Karoryfer
+    Samples products, split into Commercial/Free/Other_or_Legacy. Scope
+    is deliberately narrow (only what AI Tracker needs: playable range,
+    keyswitch→articulation, CC/mod-wheel behavior) — a handful of
+    products are marked **SFZ verified** where the range comes directly
+    from the supplied SFZ; the rest are left unset rather than inferred
+    when the SFZ delegates to a missing include file. Uses `C4 = MIDI 60`.
+    (Karoryfer Samplesの音源。Commercial/Free/Other_or_Legacyに分類。AI Trackerに必要な情報(演奏可能音域、キースイッチ→奏法対応、CC/モジュールホイールの挙動)のみに意図的に絞っています — 一部製品はSFZから直接音域を確認できたため**SFZ verified**と明記、それ以外はSFZが外部includeファイルに委譲していて確認できない場合は推測せず未設定のままにしています。`C4 = MIDI 60` 表記を使用。)
