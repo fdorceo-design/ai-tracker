@@ -116,6 +116,11 @@ MainComponent::MainComponent()
     apiLabel.setJustificationType(juce::Justification::centred);
     addAndMakeVisible(apiLabel);
 
+    // Start with 3 empty tracks already visible rather than an empty grid --
+    // BPM 120 / 4/4 are already Sequencer's own defaults, nothing to set.
+    for (int i = 0; i < 3; ++i)
+        engine.addTrack({});
+
     trackerViewport.setViewedComponent(&trackerContent, false);
     addAndMakeVisible(trackerViewport);
     trackerContent.refreshTracks();
