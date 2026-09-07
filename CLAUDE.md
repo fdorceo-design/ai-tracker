@@ -110,6 +110,13 @@ standalone app manually before AI Tracker is already running.
   woodwinds, 2025 Solo Strings). **Factory-map derivation, not per-row
   empirically verified** — confirm against the actual running instance
   before relying on it, same caveat as the PP013 doc below.
+- [Kontakt-BBCSO-Professional-Keyswitches.md](Kontakt-BBCSO-Professional-Keyswitches.md) —
+  BBC Symphony Orchestra Professional, work in progress. **Uses a different
+  octave-naming convention than every other doc here** (`C4 = MIDI 60`,
+  confirmed empirically via Violins 1 and Horn — not the `C-2 = MIDI 0`
+  convention the Sacconi/Solo Strings/SSO/PP013 docs use). Kontakt's octave
+  display is a per-library/per-instance setting; don't assume one doc's
+  convention carries over to another.
 - [Kontakt-PP013-Electric-Cellist-Keyswitches.md](Kontakt-PP013-Electric-Cellist-Keyswitches.md) —
   keyswitches and playable ranges for Peter Gregson Electric Cellist PP013,
   checked against the user's running instance.
