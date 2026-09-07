@@ -50,12 +50,12 @@ public:
             bpmByBeat[ev.beat] = juce::String(ev.bpm, 0);
 
         std::map<double, juce::String> meterByBeat;
-        meterByBeat[0.0] = juce::String(sequencer.getBeatsPerBar());
+        meterByBeat[0.0] = juce::String(sequencer.getBeatsPerBar()) + "/" + juce::String(sequencer.getTimeSigDenominator());
         for (const auto& ev : sequencer.getTimeSigEvents())
-            meterByBeat[ev.beat] = juce::String(ev.beatsPerBar);
+            meterByBeat[ev.beat] = juce::String(ev.numerator) + "/" + juce::String(ev.denominator);
 
         g.setColour(juce::Colour(0xff9bbc0f));
-        g.setFont(juce::Font(juce::FontOptions(12.0f)));
+        g.setFont(juce::Font(juce::FontOptions(11.0f)));
 
         for (const auto& [beat, label] : bpmByBeat)
         {

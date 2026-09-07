@@ -92,16 +92,23 @@ MainComponent::MainComponent()
     timeSignatureLabel.setColour(juce::Label::backgroundColourId, gbDark);
     timeSignatureLabel.onTextChange = [this]
     {
-        const auto numerator = timeSignatureLabel.getText().upToFirstOccurrenceOf("/", false, false)
+        const auto text = timeSignatureLabel.getText();
+        const auto numerator = text.upToFirstOccurrenceOf("/", false, false)
                                     .retainCharacters("0123456789").getIntValue();
-        if (numerator > 0)
-            sequencer.setBeatsPerBar(numerator);
-        timeSignatureLabel.setText(juce::String(sequencer.getBeatsPerBar()) + "/4", juce::dontSendNotification);
+        // Denominator defaults to 4 if omitted (e.g. typing just "3") or
+        // unparsable, rather than silently keeping whatever it was before.
+        const auto denominatorText = text.fromFirstOccurrenceOf("/", false, false).retainCharacters("0123456789");
+        const auto denominator = denominatorText.isNotEmpty() ? denominatorText.getIntValue() : 4;
+        if (numerator > 0 && denominator > 0)
+            sequencer.setTimeSignature(numerator, denominator);
+        timeSignatureLabel.setText(juce::String(sequencer.getBeatsPerBar()) + "/" + juce::String(sequencer.getTimeSigDenominator()),
+                                    juce::dontSendNotification);
     };
     addAndMakeVisible(timeSignatureLabel);
 
     bpmLabel.setText("BPM " + juce::String(sequencer.getBpm(), 0), juce::dontSendNotification);
-    timeSignatureLabel.setText(juce::String(sequencer.getBeatsPerBar()) + "/4", juce::dontSendNotification);
+    timeSignatureLabel.setText(juce::String(sequencer.getBeatsPerBar()) + "/" + juce::String(sequencer.getTimeSigDenominator()),
+                                juce::dontSendNotification);
 
     positionLabel.setJustificationType(juce::Justification::centred);
     positionLabel.setEditable(false, true, false);
@@ -182,7 +189,8 @@ void MainComponent::timerCallback()
     if (bpmLabel.getCurrentTextEditor() == nullptr)
         bpmLabel.setText("BPM " + juce::String(sequencer.getBpm(), 0), juce::dontSendNotification);
     if (timeSignatureLabel.getCurrentTextEditor() == nullptr)
-        timeSignatureLabel.setText(juce::String(sequencer.getBeatsPerBar()) + "/4", juce::dontSendNotification);
+        timeSignatureLabel.setText(juce::String(sequencer.getBeatsPerBar()) + "/" + juce::String(sequencer.getTimeSigDenominator()),
+                                    juce::dontSendNotification);
 
     if (positionLabel.getCurrentTextEditor() == nullptr)
     {

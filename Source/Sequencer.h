@@ -47,11 +47,14 @@ struct SequencerTempoEvent
 // boundary of whatever meter was active before it -- bar-index math (for
 // the tracker grid's bar lines) walks the events in order and accumulates
 // completed bars per segment, so a change placed mid-bar will misalign.
+// numerator/denominator are the printed time signature (e.g. 3/8); a bar's
+// length in quarter-note beats is numerator * 4.0 / denominator.
 struct SequencerTimeSigEvent
 {
     int id = 0;
     double beat = 0.0;
-    int beatsPerBar = 4;
+    int numerator = 4;
+    int denominator = 4;
 };
 
 class Sequencer : private juce::HighResolutionTimer
@@ -79,7 +82,7 @@ public:
     void clearTempoEvents();
     std::vector<SequencerTempoEvent> getTempoEvents() const;
 
-    int addTimeSigEvent(double beat, int beatsPerBar);
+    int addTimeSigEvent(double beat, int numerator, int denominator = 4);
     bool removeTimeSigEvent(int id);
     void clearTimeSigEvents();
     std::vector<SequencerTimeSigEvent> getTimeSigEvents() const;
@@ -118,10 +121,16 @@ public:
     void setBpm(double newBpm);
     double getBpm() const { return bpm.load(); }
 
-    // Numerator only (quarter-note beat unit assumed, i.e. .../4). Affects
-    // bar-line placement in the tracker grid and nothing else yet.
-    void setBeatsPerBar(int newBeatsPerBar);
+    // Sets the printed time signature (e.g. setTimeSignature(3, 8) for
+    // 3/8). Affects bar-line placement in the tracker grid and nothing else
+    // yet. setBeatsPerBar(n) is shorthand for setTimeSignature(n, 4).
+    void setTimeSignature(int numerator, int denominator);
+    void setBeatsPerBar(int newNumerator) { setTimeSignature(newNumerator, timeSigDenominator.load()); }
     int getBeatsPerBar() const { return beatsPerBar.load(); }
+    int getTimeSigDenominator() const { return timeSigDenominator.load(); }
+    // A bar's length in quarter-note beats -- what the bar-index math
+    // actually needs; numerator/denominator are just how it's displayed.
+    double getQuarterBeatsPerBar() const { return beatsPerBar.load() * 4.0 / timeSigDenominator.load(); }
 
     void setLoop(bool enabled, double startBeat, double endBeat);
     double getPositionBeats() const { return positionBeats.load(); }
@@ -169,6 +178,7 @@ private:
     std::atomic<bool> playing { false };
     std::atomic<double> bpm { 120.0 };
     std::atomic<int> beatsPerBar { 4 };
+    std::atomic<int> timeSigDenominator { 4 };
     std::atomic<double> positionBeats { 0.0 };
 
     bool loopEnabled = false;

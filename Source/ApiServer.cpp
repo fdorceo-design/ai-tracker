@@ -42,7 +42,9 @@ namespace
         auto* obj = new juce::DynamicObject();
         obj->setProperty("id", e.id);
         obj->setProperty("beat", e.beat);
-        obj->setProperty("beatsPerBar", e.beatsPerBar);
+        obj->setProperty("beatsPerBar", e.numerator); // back-compat alias
+        obj->setProperty("numerator", e.numerator);
+        obj->setProperty("denominator", e.denominator);
         return juce::var(obj);
     }
 
@@ -100,6 +102,7 @@ bool ApiServer::start(int portToUse)
         transportObj->setProperty("playing", sequencer.isPlaying());
         transportObj->setProperty("bpm", sequencer.getBpm());
         transportObj->setProperty("beatsPerBar", sequencer.getBeatsPerBar());
+        transportObj->setProperty("timeSigDenominator", sequencer.getTimeSigDenominator());
         transportObj->setProperty("positionBeats", sequencer.getPositionBeats());
         obj->setProperty("transport", juce::var(transportObj));
 
@@ -418,8 +421,11 @@ bool ApiServer::start(int portToUse)
         }
 
         const double beat = (double) parsed.getProperty("beat", 0.0);
-        const int newBeatsPerBar = (int) parsed.getProperty("beatsPerBar", 4);
-        const int id = sequencer.addTimeSigEvent(beat, newBeatsPerBar);
+        // "numerator" is preferred; "beatsPerBar" is kept as an alias for
+        // back-compat with the old quarter-note-only API.
+        const int numerator = (int) parsed.getProperty("numerator", parsed.getProperty("beatsPerBar", 4));
+        const int denominator = (int) parsed.getProperty("denominator", 4);
+        const int id = sequencer.addTimeSigEvent(beat, numerator, denominator);
 
         auto* obj = new juce::DynamicObject();
         obj->setProperty("id", id);
@@ -481,11 +487,13 @@ bool ApiServer::start(int portToUse)
     server->Post("/api/transport/timesignature", [this](const httplib::Request& req, httplib::Response& res)
     {
         auto parsed = juce::JSON::parse(juce::String(req.body));
-        const int beatsPerBar = (int) parsed.getProperty("beatsPerBar", 4);
-        sequencer.setBeatsPerBar(beatsPerBar);
+        const int numerator = (int) parsed.getProperty("numerator", parsed.getProperty("beatsPerBar", 4));
+        const int denominator = (int) parsed.getProperty("denominator", 4);
+        sequencer.setTimeSignature(numerator, denominator);
         auto* obj = new juce::DynamicObject();
         obj->setProperty("ok", true);
         obj->setProperty("beatsPerBar", sequencer.getBeatsPerBar());
+        obj->setProperty("denominator", sequencer.getTimeSigDenominator());
         sendJson(res, juce::var(obj));
     });
 

@@ -193,13 +193,14 @@ std::vector<SequencerTempoEvent> Sequencer::getTempoEvents() const
     return tempoEvents;
 }
 
-int Sequencer::addTimeSigEvent(double beat, int newBeatsPerBar)
+int Sequencer::addTimeSigEvent(double beat, int numerator, int denominator)
 {
     std::lock_guard<std::mutex> lock(timeSigMutex);
     SequencerTimeSigEvent ev;
     ev.id = nextTimeSigId++;
     ev.beat = beat;
-    ev.beatsPerBar = juce::jlimit(1, 32, newBeatsPerBar);
+    ev.numerator = juce::jlimit(1, 64, numerator);
+    ev.denominator = juce::jlimit(1, 64, denominator);
     timeSigEvents.push_back(ev);
     ++revision;
     return ev.id;
@@ -234,7 +235,7 @@ int Sequencer::getBarIndexForBeat(double beat) const
     auto events = getTimeSigEvents();
     std::sort(events.begin(), events.end(), [](const SequencerTimeSigEvent& a, const SequencerTimeSigEvent& b) { return a.beat < b.beat; });
 
-    int currentMeter = juce::jmax(1, beatsPerBar.load());
+    double currentMeter = juce::jmax(0.001, getQuarterBeatsPerBar());
     double segmentStart = 0.0;
     int barsAccumulated = 0;
 
@@ -245,7 +246,7 @@ int Sequencer::getBarIndexForBeat(double beat) const
         const double segmentLength = ev.beat - segmentStart;
         barsAccumulated += (int) std::round(segmentLength / currentMeter);
         segmentStart = ev.beat;
-        currentMeter = juce::jmax(1, ev.beatsPerBar);
+        currentMeter = juce::jmax(0.001, ev.numerator * 4.0 / ev.denominator);
     }
 
     const double remaining = beat - segmentStart;
@@ -258,7 +259,7 @@ double Sequencer::getBarStartBeat(int barIndex) const
     auto events = getTimeSigEvents();
     std::sort(events.begin(), events.end(), [](const SequencerTimeSigEvent& a, const SequencerTimeSigEvent& b) { return a.beat < b.beat; });
 
-    int currentMeter = juce::jmax(1, beatsPerBar.load());
+    double currentMeter = juce::jmax(0.001, getQuarterBeatsPerBar());
     double segmentStart = 0.0;
     int barsAccumulated = 0;
 
@@ -269,7 +270,7 @@ double Sequencer::getBarStartBeat(int barIndex) const
             return segmentStart + (double) (barIndex - barsAccumulated) * currentMeter;
         barsAccumulated += barsInSegment;
         segmentStart = ev.beat;
-        currentMeter = juce::jmax(1, ev.beatsPerBar);
+        currentMeter = juce::jmax(0.001, ev.numerator * 4.0 / ev.denominator);
     }
 
     return segmentStart + (double) (barIndex - barsAccumulated) * currentMeter;
@@ -319,9 +320,10 @@ void Sequencer::setBpm(double newBpm)
     bpm = juce::jmax(1.0, newBpm);
 }
 
-void Sequencer::setBeatsPerBar(int newBeatsPerBar)
+void Sequencer::setTimeSignature(int numerator, int denominator)
 {
-    beatsPerBar = juce::jlimit(1, 32, newBeatsPerBar);
+    beatsPerBar = juce::jlimit(1, 64, numerator);
+    timeSigDenominator = juce::jlimit(1, 64, denominator);
     ++revision; // the base meter feeds getBarIndexForBeat, so bar lines depend on it too
 }
 
@@ -388,7 +390,10 @@ void Sequencer::hiResTimerCallback()
 
     for (const auto& ev : getTimeSigEvents())
         if (ev.beat >= prevPos && ev.beat < newPos)
-            beatsPerBar = juce::jlimit(1, 32, ev.beatsPerBar);
+        {
+            beatsPerBar = juce::jlimit(1, 64, ev.numerator);
+            timeSigDenominator = juce::jlimit(1, 64, ev.denominator);
+        }
 
     if (loopEnabled && newPos >= loopEndBeat)
     {
