@@ -93,3 +93,9 @@ permitted with attribution.
     universal keyswitch map, so exact MIDI note numbers are only included
     where the product page explicitly states them.
     (MODWHEELのKontakt音源(22製品)。多くは統一されたキースイッチ表を公開していないため、公式ページに明記がある場合のみMIDIノート番号を記載しています。)
+  - [Fracture-Sounds-Keyswitches/](Fracture-Sounds-Keyswitches/README.md) —
+    Fracture Sounds Kontakt libraries, organized by product series (the
+    free Blueprint series and the paid Main Catalog series, 50
+    instruments total so far). As with MODWHEEL, exact keyswitch note
+    numbers are only recorded where officially published.
+    (Fracture SoundsのKontakt音源。製品シリーズごとにフォルダ分け(現在はBlueprintシリーズと有償のMain Catalogシリーズ、計50種)。MODWHEELと同様、公式に明記がある場合のみキースイッチ番号を記載しています。)

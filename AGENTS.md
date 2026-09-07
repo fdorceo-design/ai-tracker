@@ -137,3 +137,8 @@ standalone app manually before AI Tracker is already running.
   that isn't explicitly published in a given file; where the doc says a
   number isn't published, load the patch and check its GUI/manual rather
   than guessing.
+- [Fracture-Sounds-Keyswitches/](Fracture-Sounds-Keyswitches/README.md) —
+  Fracture Sounds Kontakt libraries, organized by product series
+  (Blueprint, Main Catalog; 50 instruments so far). Same policy as
+  MODWHEEL above: exact keyswitch note numbers are only recorded where
+  Fracture Sounds explicitly publishes them.
