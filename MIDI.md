@@ -73,13 +73,20 @@ instead:
    `AI Tracker to Standalone` is recommended over naming it after one
    specific plugin (e.g. "...to Kontakt"), since the same port works for
    any standalone app you route to.
-2. In the standalone app (e.g. Kontakt 8 Standalone), set that virtual port
+2. **Launch order matters**: start AI Tracker first, *then* the standalone
+   app. Launching the standalone app first and AI Tracker second was
+   observed to leave the connection unreliable/silent even though the
+   virtual port, its enabled state, and the MIDI channel assignment all
+   looked correct -- not root-caused, just a confirmed workaround.
+3. In the standalone app (e.g. Kontakt 8 Standalone), set that virtual port
    as its MIDI input and your real interface as its audio output.
-3. In AI Tracker, click a track's **toMIDI** button (or
+4. In AI Tracker, click a track's **toMIDI** button (or
    `POST /api/tracks/:id/midi-output {"device":"<port name>"}`) and pick the
    virtual port from the list (`GET /api/midi-outputs`).
-4. Optionally launch the standalone app itself via
-   `POST /api/launch-app {"path":"C:\\...\\Kontakt 8.exe"}`.
+5. Optionally launch the standalone app itself via
+   `POST /api/launch-app {"path":"C:\\...\\Kontakt 8.exe"}` -- this
+   naturally launches it after AI Tracker already exists, so it's the
+   easiest way to always get the order above right.
 
 Audio from a track routed this way plays directly from the standalone app to
 your real output device -- it is not mixed through AI Tracker, so it will
