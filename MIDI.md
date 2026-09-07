@@ -89,6 +89,25 @@ integration for reliability; auto-creating the virtual port programmatically
 deferred -- it needs the SDK's exact C API, which requires downloading and
 verifying Tobias Erichsen's SDK package rather than guessing signatures.
 
+## Stuck notes / panic
+
+An external-MIDI-routed track (see above) plays through a separate synth
+process that AI Tracker doesn't control the lifetime of. If AI Tracker exits
+abruptly -- killed from Task Manager, or a dev rebuild's `taskkill` -- it
+skips the note-offs a clean shutdown sends, which can leave that synth
+sounding a note indefinitely.
+
+- `POST /api/panic` sends All Notes Off (CC123) + All Sound Off (CC120) on
+  every channel (not just each track's assigned one) of every current
+  track's output. The toolbar's **Panic** button does the same.
+- On startup, before doing anything else, AI Tracker briefly opens *every*
+  MIDI output device currently on the system and blasts the same panic
+  sequence on all 16 channels -- independent of any track configuration, so
+  it also clears a note stuck by a *previous* run's abrupt exit, not just
+  the current session's.
+- The same panic also runs automatically on a clean shutdown, as a second
+  line of defense for the normal case.
+
 ## Verification
 
 Run `"AI Tracker.exe" --midi-self-test "C:\\absolute\\test-output"` to test
