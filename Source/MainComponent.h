@@ -26,6 +26,7 @@ private:
     juce::Label titleLabel;
     juce::TextButton addTrackButton{"+ Add Track"};
     juce::TextButton playButton{"Play"};
+    juce::TextButton pauseButton{"Pause"};
     juce::TextButton stopButton{"Stop"};
     juce::Label bpmLabel;
     juce::Label timeSignatureLabel;

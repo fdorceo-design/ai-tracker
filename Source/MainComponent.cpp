@@ -69,6 +69,9 @@ MainComponent::MainComponent()
     playButton.onClick = [this] { sequencer.play(); };
     addAndMakeVisible(playButton);
 
+    pauseButton.onClick = [this] { sequencer.pause(); };
+    addAndMakeVisible(pauseButton);
+
     stopButton.onClick = [this] { sequencer.stop(); };
     addAndMakeVisible(stopButton);
 
@@ -101,6 +104,13 @@ MainComponent::MainComponent()
     timeSignatureLabel.setText(juce::String(sequencer.getBeatsPerBar()) + "/4", juce::dontSendNotification);
 
     positionLabel.setJustificationType(juce::Justification::centred);
+    positionLabel.setEditable(false, true, false);
+    positionLabel.setColour(juce::Label::backgroundColourId, gbDark);
+    positionLabel.onTextChange = [this]
+    {
+        const auto value = positionLabel.getText().retainCharacters("0123456789.").getDoubleValue();
+        sequencer.setPositionBeats(juce::jmax(0.0, value));
+    };
     addAndMakeVisible(positionLabel);
 
     apiLabel.setJustificationType(juce::Justification::centred);
@@ -141,6 +151,8 @@ void MainComponent::resized()
     topRow.removeFromLeft(10);
     playButton.setBounds(topRow.removeFromLeft(80));
     topRow.removeFromLeft(10);
+    pauseButton.setBounds(topRow.removeFromLeft(80));
+    topRow.removeFromLeft(10);
     stopButton.setBounds(topRow.removeFromLeft(80));
     topRow.removeFromLeft(10);
     bpmLabel.setBounds(topRow.removeFromLeft(90));
@@ -165,7 +177,25 @@ void MainComponent::timerCallback()
     if (timeSignatureLabel.getCurrentTextEditor() == nullptr)
         timeSignatureLabel.setText(juce::String(sequencer.getBeatsPerBar()) + "/4", juce::dontSendNotification);
 
-    juce::String txt = sequencer.isPlaying() ? "Playing" : "Stopped";
-    txt << "  beat " << juce::String(sequencer.getPositionBeats(), 2);
-    positionLabel.setText(txt, juce::dontSendNotification);
+    if (positionLabel.getCurrentTextEditor() == nullptr)
+    {
+        juce::String txt = sequencer.isPlaying() ? "Playing" : "Stopped";
+        txt << "  beat " << juce::String(sequencer.getPositionBeats(), 2);
+        positionLabel.setText(txt, juce::dontSendNotification);
+    }
+
+    if (sequencer.isPlaying())
+    {
+        const int y = trackerContent.getYForBeat(sequencer.getPositionBeats());
+        auto viewPos = trackerViewport.getViewPosition();
+        const int viewportHeight = trackerViewport.getHeight();
+        const int margin = viewportHeight / 3;
+
+        if (y < viewPos.y + margin)
+            viewPos.y = juce::jmax(0, y - margin);
+        else if (y > viewPos.y + viewportHeight - margin)
+            viewPos.y = y - viewportHeight + margin;
+
+        trackerViewport.setViewPosition(viewPos);
+    }
 }

@@ -26,6 +26,12 @@ public:
     void resized() override;
     void paintOverChildren(juce::Graphics& g) override;
 
+    // Absolute Y pixel (in this component's coordinate space) of the bar
+    // containing the given beat, for scrolling the playhead into view.
+    // Approximate: resolves to the bar's shared band, not the exact row,
+    // since rows are a sparse per-track layout rather than a fixed timeline.
+    int getYForBeat(double beat) const;
+
 private:
     static constexpr int headerHeight = 152;
     static constexpr int columnWidth = 280;

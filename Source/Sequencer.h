@@ -38,7 +38,14 @@ public:
 
     void play();
     void stop();
+    // Halts playback (and silences sounding notes) without resetting the
+    // position, unlike stop(). Calling play() again resumes from here.
+    void pause();
     bool isPlaying() const { return playing.load(); }
+
+    // Jumps the playhead to a given beat, silencing any currently-sounding
+    // notes first. Safe to call whether playing or stopped.
+    void setPositionBeats(double beat);
 
     void setBpm(double newBpm);
     double getBpm() const { return bpm.load(); }

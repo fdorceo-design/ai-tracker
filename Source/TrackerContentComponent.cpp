@@ -142,4 +142,29 @@ void TrackerContentComponent::paintOverChildren(juce::Graphics& g)
     g.setColour(juce::Colour(0xff9bbc0f));
     for (size_t i = 1; i < barBands.size(); ++i)
         g.fillRect(0, baseY + barBands[i].yPixel - 1, getWidth(), 2);
+
+    if (sequencer.isPlaying())
+    {
+        const int y = getYForBeat(sequencer.getPositionBeats());
+        g.setColour(juce::Colour(0xffe0f8cf));
+        g.fillRect(0, y - 1, getWidth(), 2);
+    }
+}
+
+int TrackerContentComponent::getYForBeat(double beat) const
+{
+    const int baseY = headerHeight + TrackEventListComponent::captionHeight + TrackEventListComponent::rowHeight;
+    if (barBands.empty())
+        return baseY;
+
+    const int beatsPerBar = juce::jmax(1, sequencer.getBeatsPerBar());
+    const int bar = (int) std::floor(beat / (double) beatsPerBar);
+
+    for (const auto& band : barBands)
+        if (band.barIndex == bar)
+            return baseY + band.yPixel;
+
+    if (bar < barBands.front().barIndex)
+        return baseY;
+    return baseY + barBands.back().yPixel;
 }

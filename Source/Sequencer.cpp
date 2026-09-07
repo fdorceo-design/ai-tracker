@@ -128,6 +128,29 @@ void Sequencer::stop()
     positionBeats = 0.0;
 }
 
+void Sequencer::pause()
+{
+    playing = false;
+    stopTimer();
+    allNotesOff();
+}
+
+void Sequencer::setPositionBeats(double beat)
+{
+    const bool wasPlaying = playing.load();
+    if (wasPlaying)
+        stopTimer();
+
+    allNotesOff();
+    positionBeats = juce::jmax(0.0, beat);
+
+    if (wasPlaying)
+    {
+        lastTimerMs = juce::Time::getMillisecondCounterHiRes();
+        startTimer(3);
+    }
+}
+
 void Sequencer::setBpm(double newBpm)
 {
     bpm = juce::jmax(1.0, newBpm);
@@ -193,6 +216,25 @@ void Sequencer::hiResTimerCallback()
         allNotesOff();
         const double loopLength = loopEndBeat - loopStartBeat;
         newPos = loopStartBeat + std::fmod(newPos - loopEndBeat, loopLength);
+    }
+    else if (!loopEnabled)
+    {
+        double endBeat = 0.0;
+        bool hasNotes = false;
+        for (const auto& n : snapshot)
+        {
+            hasNotes = true;
+            endBeat = juce::jmax(endBeat, n.startBeat + n.lengthBeats);
+        }
+
+        if (hasNotes && newPos >= endBeat)
+        {
+            allNotesOff();
+            positionBeats = 0.0;
+            playing = false;
+            stopTimer();
+            return;
+        }
     }
 
     positionBeats = newPos;

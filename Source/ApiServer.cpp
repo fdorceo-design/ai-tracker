@@ -289,6 +289,23 @@ bool ApiServer::start(int portToUse)
         sendOk(res, true);
     });
 
+    server->Post("/api/transport/pause", [this](const httplib::Request&, httplib::Response& res)
+    {
+        sequencer.pause();
+        sendOk(res, true);
+    });
+
+    server->Post("/api/transport/seek", [this](const httplib::Request& req, httplib::Response& res)
+    {
+        auto parsed = juce::JSON::parse(juce::String(req.body));
+        const double beat = (double) parsed.getProperty("beat", 0.0);
+        sequencer.setPositionBeats(beat);
+        auto* obj = new juce::DynamicObject();
+        obj->setProperty("ok", true);
+        obj->setProperty("positionBeats", sequencer.getPositionBeats());
+        sendJson(res, juce::var(obj));
+    });
+
     server->Post("/api/transport/bpm", [this](const httplib::Request& req, httplib::Response& res)
     {
         auto parsed = juce::JSON::parse(juce::String(req.body));
