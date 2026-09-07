@@ -49,6 +49,11 @@ target_sources(AiTracker PRIVATE
 target_compile_definitions(AiTracker PRIVATE
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
+    # JUCE 8 defaults to a Direct2D renderer on Windows, which has known
+    # hang/freeze issues on some systems during live window resizing (the
+    # whole desktop compositor can stall waiting on a frame). Force the
+    # older GDI-based software renderer instead -- slower, but stable.
+    JUCE_DIRECT2D=0
     JUCE_APPLICATION_NAME_STRING="$<TARGET_PROPERTY:AiTracker,JUCE_PRODUCT_NAME>"
     JUCE_APPLICATION_VERSION_STRING="$<TARGET_PROPERTY:AiTracker,JUCE_VERSION>"
 )
