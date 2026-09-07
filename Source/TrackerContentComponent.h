@@ -43,5 +43,9 @@ private:
     std::vector<std::unique_ptr<TrackEventListComponent>> eventLists;
     std::vector<BarBand> barBands;
 
+    // Lets refreshTracks() skip its expensive per-note rebuild when called
+    // again with nothing changed (it's invoked unconditionally at 10Hz).
+    uint64_t lastSequencerRevision = ~0ull;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TrackerContentComponent)
 };

@@ -84,6 +84,15 @@ public:
     void clearTimeSigEvents();
     std::vector<SequencerTimeSigEvent> getTimeSigEvents() const;
 
+    // Bumped on every note/CC/tempo/timesig mutation (not on playback
+    // position changes). Lets the UI skip its expensive per-note grid
+    // rebuild when nothing has actually changed since the last check,
+    // instead of unconditionally redoing it on every timer tick -- that
+    // rebuild competing with the flood of paint/size messages during a
+    // live window resize was making the whole app (and the OS compositor)
+    // appear to hang.
+    uint64_t getRevision() const { return revision.load(); }
+
     // Bar index for a beat, accounting for any scheduled time-signature
     // changes (see SequencerTimeSigEvent). Used for the tracker grid's bar
     // lines so they stay correct across a meter change.
@@ -154,6 +163,8 @@ private:
     mutable std::mutex timeSigMutex;
     std::vector<SequencerTimeSigEvent> timeSigEvents;
     int nextTimeSigId = 1;
+
+    std::atomic<uint64_t> revision { 0 };
 
     std::atomic<bool> playing { false };
     std::atomic<double> bpm { 120.0 };

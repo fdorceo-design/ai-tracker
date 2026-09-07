@@ -74,7 +74,21 @@ void TrackerContentComponent::refreshTracks()
         eventLists = std::move(reordered);
     }
 
+    const bool tracksChanged = (ids != trackOrder);
     trackOrder = ids;
+
+    // The rest of this function -- rebuilding the bar-band layout and every
+    // track's note rows -- is O(total notes) and was previously done
+    // unconditionally on every 10Hz timer tick. Skip it when nothing that
+    // would change its output has happened since last time (still always
+    // runs while playing, since the playhead/highlighted-row state needs
+    // to keep advancing). This used to be cheap enough not to matter, but
+    // competing with the flood of paint/resize messages during a live
+    // window resize was enough to make the whole app appear to hang.
+    const uint64_t currentRevision = sequencer.getRevision();
+    if (!tracksChanged && currentRevision == lastSequencerRevision && !sequencer.isPlaying())
+        return;
+    lastSequencerRevision = currentRevision;
 
     // Shared bar layout: group every track's notes by bar, and size each
     // bar's band to the tallest track within it, so a track with fewer

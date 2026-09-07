@@ -47,6 +47,7 @@ int Sequencer::addNote(int trackId, int pitch, float velocity, double startBeat,
     n.startBeat = startBeat;
     n.lengthBeats = juce::jmax(0.001, lengthBeats);
     notes.push_back(n);
+    ++revision;
     return n.id;
 }
 
@@ -57,6 +58,7 @@ bool Sequencer::removeNote(int id)
     if (it == notes.end())
         return false;
     notes.erase(it);
+    ++revision;
     return true;
 }
 
@@ -67,6 +69,7 @@ bool Sequencer::setNotePitch(int id, int newPitch)
     if (it == notes.end())
         return false;
     it->pitch = juce::jlimit(0, 127, newPitch);
+    ++revision;
     return true;
 }
 
@@ -77,6 +80,7 @@ bool Sequencer::setNoteBeat(int id, double newStartBeat)
     if (it == notes.end())
         return false;
     it->startBeat = juce::jmax(0.0, newStartBeat);
+    ++revision;
     return true;
 }
 
@@ -87,6 +91,7 @@ bool Sequencer::setNoteLength(int id, double newLengthBeats)
     if (it == notes.end())
         return false;
     it->lengthBeats = juce::jmax(0.001, newLengthBeats);
+    ++revision;
     return true;
 }
 
@@ -97,6 +102,7 @@ bool Sequencer::setNoteVelocity(int id, float newVelocity)
     if (it == notes.end())
         return false;
     it->velocity = juce::jlimit(0.0f, 1.0f, newVelocity);
+    ++revision;
     return true;
 }
 
@@ -104,6 +110,7 @@ void Sequencer::clearNotes()
 {
     std::lock_guard<std::mutex> lock(noteMutex);
     notes.clear();
+    ++revision;
 }
 
 std::vector<SequencerNote> Sequencer::getNotes() const
@@ -122,6 +129,7 @@ int Sequencer::addCC(int trackId, int controller, int value, double beat)
     cc.value = juce::jlimit(0, 127, value);
     cc.beat = beat;
     ccEvents.push_back(cc);
+    ++revision;
     return cc.id;
 }
 
@@ -132,6 +140,7 @@ bool Sequencer::removeCC(int id)
     if (it == ccEvents.end())
         return false;
     ccEvents.erase(it);
+    ++revision;
     return true;
 }
 
@@ -139,6 +148,7 @@ void Sequencer::clearCC()
 {
     std::lock_guard<std::mutex> lock(ccMutex);
     ccEvents.clear();
+    ++revision;
 }
 
 std::vector<SequencerCC> Sequencer::getCCEvents() const
@@ -155,6 +165,7 @@ int Sequencer::addTempoEvent(double beat, double newBpm)
     ev.beat = beat;
     ev.bpm = juce::jmax(1.0, newBpm);
     tempoEvents.push_back(ev);
+    ++revision;
     return ev.id;
 }
 
@@ -165,6 +176,7 @@ bool Sequencer::removeTempoEvent(int id)
     if (it == tempoEvents.end())
         return false;
     tempoEvents.erase(it);
+    ++revision;
     return true;
 }
 
@@ -172,6 +184,7 @@ void Sequencer::clearTempoEvents()
 {
     std::lock_guard<std::mutex> lock(tempoMutex);
     tempoEvents.clear();
+    ++revision;
 }
 
 std::vector<SequencerTempoEvent> Sequencer::getTempoEvents() const
@@ -188,6 +201,7 @@ int Sequencer::addTimeSigEvent(double beat, int newBeatsPerBar)
     ev.beat = beat;
     ev.beatsPerBar = juce::jlimit(1, 32, newBeatsPerBar);
     timeSigEvents.push_back(ev);
+    ++revision;
     return ev.id;
 }
 
@@ -198,6 +212,7 @@ bool Sequencer::removeTimeSigEvent(int id)
     if (it == timeSigEvents.end())
         return false;
     timeSigEvents.erase(it);
+    ++revision;
     return true;
 }
 
@@ -205,6 +220,7 @@ void Sequencer::clearTimeSigEvents()
 {
     std::lock_guard<std::mutex> lock(timeSigMutex);
     timeSigEvents.clear();
+    ++revision;
 }
 
 std::vector<SequencerTimeSigEvent> Sequencer::getTimeSigEvents() const
@@ -306,6 +322,7 @@ void Sequencer::setBpm(double newBpm)
 void Sequencer::setBeatsPerBar(int newBeatsPerBar)
 {
     beatsPerBar = juce::jlimit(1, 32, newBeatsPerBar);
+    ++revision; // the base meter feeds getBarIndexForBeat, so bar lines depend on it too
 }
 
 void Sequencer::setLoop(bool enabled, double startBeat, double endBeat)
@@ -623,5 +640,6 @@ bool Sequencer::importFromMidiFile(const juce::File& file, int trackId)
         }
     }
 
+    ++revision;
     return true;
 }
