@@ -84,7 +84,12 @@ permitted with attribution.
     — read its own convention section before using it)
     (作業中。**他のファイルとはオクターブ表記の慣習が異なる**ので、使う前に自身の慣習説明の節を読んでください。)
   - [Ample-Sound-Keyswitches/](Ample-Sound-Keyswitches/README.md) — Ample
-    Sound bass/guitar/ukulele libraries (ABA, ABU, AGL, AEU, ABJ, ABJF),
-    each sourced directly from the official Ample Sound manual for that
+    Sound bass/guitar/ukulele/metal libraries (24 instruments), each
+    sourced directly from the official Ample Sound manual for that
     instrument. Uses `C4 = MIDI 60`.
-    (Ample Soundのベース/ギター/ウクレレ音源(ABA, ABU, AGL, AEU, ABJ, ABJF)。各ファイルとも公式Ample Soundマニュアルを出典としています。`C4 = MIDI 60` 表記を使用。)
+    (Ample Soundのベース/ギター/ウクレレ/メタル音源(24種)。各ファイルとも公式Ample Soundマニュアルを出典としています。`C4 = MIDI 60` 表記を使用。)
+  - [MODWHEEL-Keyswitches/](MODWHEEL-Keyswitches/README.md) — MODWHEEL
+    Kontakt libraries (22 products). These generally don't publish one
+    universal keyswitch map, so exact MIDI note numbers are only included
+    where the product page explicitly states them.
+    (MODWHEELのKontakt音源(22製品)。多くは統一されたキースイッチ表を公開していないため、公式ページに明記がある場合のみMIDIノート番号を記載しています。)
