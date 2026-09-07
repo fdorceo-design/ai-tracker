@@ -119,3 +119,10 @@ permitted with attribution.
     products) — kept as separate sets since edition compatibility
     differs per product. Same don't-guess-the-note policy.
     (Impact Soundworksの音源。必要なKontaktエディションで分類(フルKontakt版34種、Kontakt Player対応版58種)— 製品ごとに対応エディションが異なるため別セットにしています。番号を推測しない方針は共通。)
+  - [Westwood-Instruments-Keyswitches/](Westwood-Instruments-Keyswitches/README.md) —
+    Westwood Instruments libraries (16 current standalone products).
+    **Newer Westwood instruments let the user globally enable/disable
+    keyswitches and move their keyboard position**, so a factory KS
+    location isn't necessarily permanent — the installed instrument's
+    current mapping always takes precedence over this doc.
+    (Westwood Instrumentsの音源(現行の単体製品16種)。**新しいWestwood製品ではキースイッチの全体的な有効/無効切り替えや、キーボード上の位置移動をユーザーが行える**ため、工場出荷時のキースイッチ位置が固定とは限りません — インストール済み音源の現在のマッピングが常にこのドキュメントより優先されます。)

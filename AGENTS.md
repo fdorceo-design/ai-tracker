@@ -161,3 +161,10 @@ standalone app manually before AI Tracker is already running.
   products). Check which set a given product is in before assuming it
   loads in Kontakt Player. Configurable/remappable articulation layouts
   are treated as mapping-flexible, not one fixed global layout.
+- [Westwood-Instruments-Keyswitches/](Westwood-Instruments-Keyswitches/README.md) —
+  Westwood Instruments libraries (16 current standalone products).
+  **Important**: newer Westwood instruments expose an `ALL KEYSWITCHES`
+  toggle and a movable `KEYSWITCH POSITION` setting in their own UI —
+  factory keyswitch locations are not permanent. Always prefer
+  articulation names plus whatever the running instance's Settings page
+  currently shows over any fixed note number from this doc.
