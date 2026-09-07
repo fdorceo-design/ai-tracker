@@ -61,6 +61,17 @@ standalone app manually before AI Tracker is already running.
   a short note early in bar 0 (e.g. `startBeat: 0.0`, `lengthBeats: 1.0` is
   plenty of room) — it never needs to compete for timing with bar 1's first
   note since they're a full bar apart.
+- **A mid-piece articulation change is different: don't put the keyswitch at
+  the exact same `startBeat` as the note it's meant to affect**, even though
+  the sequencer processes same-tick notes in vector/insertion order (so a
+  keyswitch added *before* the colliding note in API-call order would, in
+  principle, still fire first within that tick). It's fragile in practice —
+  easy to get the insertion order backwards without noticing (e.g. building
+  the keyswitch list in a separate pass *after* the melody notes, which then
+  land later in the vector, meaning after the note on a tie). Give the
+  keyswitch a `startBeat` a little *before* the note instead (e.g. 0.05-0.1
+  beat earlier) so it's genuinely separated in time, not just in insertion
+  order.
 - Default: auto-generated pieces occupy bar 0 for setup only and start their
   actual music at bar 1. Don't add extra silent bars beyond that.
 
