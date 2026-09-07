@@ -119,6 +119,7 @@ MainComponent::MainComponent()
     trackerViewport.setViewedComponent(&trackerContent, false);
     addAndMakeVisible(trackerViewport);
     trackerContent.refreshTracks();
+    addAndMakeVisible(tempoMapColumn);
 
     if (apiServer.start(apiPort))
         apiLabel.setText("API: http://127.0.0.1:" + juce::String(apiPort), juce::dontSendNotification);
@@ -164,6 +165,7 @@ void MainComponent::resized()
     apiLabel.setBounds(area.removeFromTop(24));
     area.removeFromTop(10);
 
+    tempoMapColumn.setBounds(area.removeFromLeft(70));
     trackerViewport.setBounds(area);
 }
 
@@ -198,4 +200,6 @@ void MainComponent::timerCallback()
 
         trackerViewport.setViewPosition(viewPos);
     }
+
+    tempoMapColumn.setScrollOffsetY(trackerViewport.getViewPositionY());
 }

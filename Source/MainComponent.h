@@ -5,6 +5,7 @@
 #include "Sequencer.h"
 #include "ApiServer.h"
 #include "TrackerContentComponent.h"
+#include "TempoMapColumn.h"
 
 class MainComponent : public juce::Component,
                        private juce::Timer
@@ -35,6 +36,7 @@ private:
 
     juce::Viewport trackerViewport;
     TrackerContentComponent trackerContent { engine, sequencer };
+    TempoMapColumn tempoMapColumn { sequencer, trackerContent };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
 };
