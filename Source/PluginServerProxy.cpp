@@ -78,7 +78,15 @@ void PluginServerProxy::loadPlugin(const juce::File& pluginFile, double sampleRa
     }
 
     const auto pipeName = makePipeName();
-    if (!connection->createPipe(pipeName, 30000))
+    // NOTE: this timeout applies to pipe *writes* too (JUCE shares one
+    // value for both), and sendMessage() below is called from the real
+    // audio thread every block. An infinite value here can hang the audio
+    // thread forever if the child dies mid-write, which is worse than the
+    // false-disconnect risk it was meant to fix -- renderNextBlock already
+    // runs continuously once a device is open, so idle-looking pipes
+    // should be rare in practice. Kept generous (well above one audio
+    // block) rather than infinite.
+    if (!connection->createPipe(pipeName, 4000))
     {
         onError("Failed to create IPC pipe for plugin server");
         return;

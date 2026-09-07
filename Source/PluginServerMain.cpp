@@ -112,7 +112,10 @@ public:
         connection->onDisconnect = [this] { quit(); };
         connection->onMessage = [this](const juce::MemoryBlock& mb) { handleMessage(mb); };
 
-        if (pipeName.isEmpty() || !connection->connectToPipe(pipeName, 10000))
+        // See the matching comment in PluginServerProxy::loadPlugin: this
+        // timeout applies to writes too (this side's audioResult sends),
+        // so it must stay finite rather than infinite.
+        if (pipeName.isEmpty() || !connection->connectToPipe(pipeName, 4000))
         {
             quit();
             return;
