@@ -91,8 +91,11 @@ void TrackEventListComponent::applyBarLayout(const std::vector<BarBand>& bands)
     }
     rows = std::move(reordered);
 
-    const bool playing = sequencer.isPlaying();
     const double pos = sequencer.getPositionBeats();
+    // Stays lit through a pause (playing==false but position holds), same
+    // as the playback dimming mask -- only clears once truly stopped
+    // (position reset to 0), not just whenever playback isn't advancing.
+    const bool showHighlight = sequencer.isPlaying() || pos > 0.0;
     const int notesTop = captionHeight + rowHeight;
 
     bool haveCurrentBar = false;
@@ -120,7 +123,7 @@ void TrackEventListComponent::applyBarLayout(const std::vector<BarBand>& bands)
         const int bandY = (bandIt != bands.end()) ? bandIt->yPixel : 0;
 
         rows[i]->setBounds(0, notesTop + bandY + indexWithinBar * rowHeight, getWidth(), rowHeight);
-        rows[i]->setHighlighted(playing && pos >= n.startBeat && pos < n.startBeat + n.lengthBeats);
+        rows[i]->setHighlighted(showHighlight && pos >= n.startBeat && pos < n.startBeat + n.lengthBeats);
     }
 
     resized();
@@ -128,12 +131,12 @@ void TrackEventListComponent::applyBarLayout(const std::vector<BarBand>& bands)
 
 void TrackEventListComponent::updateHighlights()
 {
-    const bool playing = sequencer.isPlaying();
     const double pos = sequencer.getPositionBeats();
+    const bool showHighlight = sequencer.isPlaying() || pos > 0.0;
     for (auto& row : rows)
     {
         const auto& n = row->getCachedNote();
-        row->setHighlighted(playing && pos >= n.startBeat && pos < n.startBeat + n.lengthBeats);
+        row->setHighlighted(showHighlight && pos >= n.startBeat && pos < n.startBeat + n.lengthBeats);
     }
 }
 
