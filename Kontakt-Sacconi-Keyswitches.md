@@ -18,7 +18,7 @@ note is enough; note-off timing doesn't matter for triggering the switch.
 
 **Give the keyswitch a `startBeat` genuinely earlier than the note it should
 affect (e.g. 0.05-0.1 beat) — never the same `startBeat`.** See
-[CLAUDE.md](CLAUDE.md)'s composition conventions for why: same-beat ordering
+[AGENTS.md](AGENTS.md)'s composition conventions for why: same-beat ordering
 relies on insertion order into the notes list, which is easy to get backwards
 by accident (e.g. generating keyswitches in a pass that runs after the
 melody notes).
@@ -162,7 +162,7 @@ convention unconfirmed; treat as approximate, not used for keyswitch math)
 - AI Tracker's HTTP API (`POST /api/notes`) only sequences plain notes; a
   keyswitch is just a short note at the keyswitch pitch on the same
   track/channel, placed before the notes it should affect (in this project,
-  in the reserved setup bar — see [CLAUDE.md](CLAUDE.md)).
+  in the reserved setup bar — see [AGENTS.md](AGENTS.md)).
 - **History**: two earlier attempts at this table computed values from a
   note-name/octave convention (C4=60 giving Long=18, then C3=60 giving
   Long=30) — both were wrong and silently failed (no error, articulation

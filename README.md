@@ -10,12 +10,10 @@ the same session through a Tracker-style GUI. JUCE/C++, CMake build.
 - **For an AI operating this app**: everything you need is `POST`/`GET`
   JSON over `http://127.0.0.1:8080` once the app is running — no code
   changes required to compose or play. Read
-  **[CLAUDE.md](CLAUDE.md)** first; it has the API conventions that matter
+  **[AGENTS.md](AGENTS.md)** first; it has the API conventions that matter
   (beat numbering, bar-0 setup convention, keyswitch timing) and links to
-  the rest of the reference docs below. If you're not Claude/Claude Code,
-  CLAUDE.md is still the right file to read — despite the name, its content
-  isn't Claude-specific, it's just where this project's AI-operation notes
-  live.
+  the rest of the reference docs below. That's the right file regardless of
+  which AI/agent you are.
 
 ## Quick start
 
@@ -33,7 +31,7 @@ GUI window at the same time; both operate the same live session.
 
 ## Reference docs
 
-- **[CLAUDE.md](CLAUDE.md)** — composition/API conventions for an AI
+- **[AGENTS.md](AGENTS.md)** — composition/API conventions for an AI
   operating this app (start here if you're an AI, not a human).
 - **[MIDI.md](MIDI.md)** — MIDI import/export, and the external-MIDI-routing
   fallback for VST3 instruments that crash when hosted directly (e.g.
