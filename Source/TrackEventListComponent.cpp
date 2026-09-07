@@ -1,6 +1,7 @@
 #include "TrackEventListComponent.h"
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 TrackEventListComponent::TrackEventListComponent(Sequencer& sequencerIn, int trackIdIn)
     : sequencer(sequencerIn), trackId(trackIdIn)
@@ -52,10 +53,20 @@ void TrackEventListComponent::applyBarLayout(const std::vector<BarBand>& bands)
     // and a sort over the time-signature events) and threaded through to
     // both the row's own display and the layout pass below, rather than
     // each place re-deriving it independently.
+    // isFirstInBar marks only the first row of each bar -- the bar number
+    // is only drawn there, not repeated on every row of the same bar.
     std::vector<int> barIndices;
+    std::vector<bool> isFirstInBar;
     barIndices.reserve(mine.size());
+    isFirstInBar.reserve(mine.size());
+    int prevBar = std::numeric_limits<int>::min();
     for (const auto& n : mine)
-        barIndices.push_back(sequencer.getBarIndexForBeat(n.startBeat));
+    {
+        const int bar = sequencer.getBarIndexForBeat(n.startBeat);
+        barIndices.push_back(bar);
+        isFirstInBar.push_back(bar != prevBar);
+        prevBar = bar;
+    }
 
     std::vector<std::unique_ptr<NoteRowComponent>> reordered;
     reordered.reserve(mine.size());
@@ -66,14 +77,14 @@ void TrackEventListComponent::applyBarLayout(const std::vector<BarBand>& bands)
                                    [&](const std::unique_ptr<NoteRowComponent>& r) { return r->getNoteId() == n.id; });
         if (found != rows.end())
         {
-            (*found)->refresh(n, barIndices[idx]);
+            (*found)->refresh(n, barIndices[idx], isFirstInBar[idx]);
             reordered.push_back(std::move(*found));
             rows.erase(found);
         }
         else
         {
             auto row = std::make_unique<NoteRowComponent>(sequencer, n.id);
-            row->refresh(n, barIndices[idx]);
+            row->refresh(n, barIndices[idx], isFirstInBar[idx]);
             addAndMakeVisible(*row);
             reordered.push_back(std::move(row));
         }

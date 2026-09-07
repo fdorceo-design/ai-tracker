@@ -14,8 +14,10 @@ public:
     int getNoteId() const { return noteId; }
     // barIndex is precomputed by the caller (TrackEventListComponent),
     // which already needs it for row layout -- avoids each row re-deriving
-    // it via another Sequencer::getBarIndexForBeat call/sort.
-    void refresh(const SequencerNote& note, int barIndex);
+    // it via another Sequencer::getBarIndexForBeat call/sort. showBarNumber
+    // is false for every row after the first in a given bar, so the number
+    // only appears once per bar instead of repeating on every row.
+    void refresh(const SequencerNote& note, int barIndex, bool showBarNumber);
     void setHighlighted(bool shouldHighlight);
 
     void paint(juce::Graphics& g) override;

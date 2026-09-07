@@ -73,13 +73,13 @@ NoteRowComponent::NoteRowComponent(Sequencer& sequencerIn, int noteIdIn)
     addAndMakeVisible(deleteButton);
 }
 
-void NoteRowComponent::refresh(const SequencerNote& note, int barIndex)
+void NoteRowComponent::refresh(const SequencerNote& note, int barIndex, bool showBarNumber)
 {
     cachedNote = note;
     const double relBeat = note.startBeat - sequencer.getBarStartBeat(barIndex) + 1.0;
 
     if (barLabel.getCurrentTextEditor() == nullptr)
-        barLabel.setText(juce::String(barIndex + 1), juce::dontSendNotification);
+        barLabel.setText(showBarNumber ? juce::String(barIndex + 1) : juce::String(), juce::dontSendNotification);
     if (beatLabel.getCurrentTextEditor() == nullptr)
         beatLabel.setText(juce::String(relBeat, 3), juce::dontSendNotification);
     if (lengthLabel.getCurrentTextEditor() == nullptr)

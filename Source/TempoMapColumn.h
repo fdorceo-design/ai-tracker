@@ -30,14 +30,19 @@ public:
     }
 
     // Numeric-only, split into two narrow sub-columns (BPM | time-sig
-    // numerator) side by side, to keep the whole strip compact.
+    // numerator) side by side, to keep the whole strip compact. Only
+    // colored from the first bar row downward -- there's nothing to show
+    // above that (it would otherwise sit as a blank band next to the
+    // per-track header area, which this column has no equivalent of).
     void paint(juce::Graphics& g) override
     {
-        g.fillAll(juce::Colour(0xff306230));
+        const int contentTop = juce::jmax(0, content.getYForBeat(0.0) - scrollOffsetY);
+        g.setColour(juce::Colour(0xff306230));
+        g.fillRect(0, contentTop, getWidth(), getHeight() - contentTop);
 
         const int half = getWidth() / 2;
         g.setColour(juce::Colour(0xff9bbc0f).withAlpha(0.3f));
-        g.drawVerticalLine(half, 0.0f, (float) getHeight());
+        g.drawVerticalLine(half, (float) contentTop, (float) getHeight());
 
         std::map<double, juce::String> bpmByBeat;
         bpmByBeat[0.0] = juce::String(sequencer.getBpm(), 0);
