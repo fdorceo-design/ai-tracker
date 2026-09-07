@@ -42,7 +42,15 @@ int AudioEngine::addTrack(juce::String name)
         if (!inUse) { freeChannel = candidate; break; }
     }
     track->setMidiChannel(freeChannel);
-    tracks.push_back(std::move(track));
+
+    // Insert at the position matching that channel among existing tracks
+    // (not always at the end) -- so left-to-right column order keeps
+    // matching channel order, including when a track added after some
+    // others were removed backfills an earlier channel: it lands back in
+    // that earlier slot, not appended after tracks with a higher channel.
+    auto insertBefore = std::find_if(tracks.begin(), tracks.end(),
+                                      [freeChannel](const std::unique_ptr<Track>& t) { return t->getMidiChannel() > freeChannel; });
+    tracks.insert(insertBefore, std::move(track));
     return id;
 }
 

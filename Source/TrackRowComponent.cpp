@@ -119,7 +119,8 @@ void TrackRowComponent::toMidiClicked()
 
 void TrackRowComponent::refreshStatus()
 {
-    nameLabel.setText(engine.getTrackName(trackId), juce::dontSendNotification);
+    if (nameLabel.getCurrentTextEditor() == nullptr)
+        nameLabel.setText(engine.getTrackName(trackId), juce::dontSendNotification);
     if (channelLabel.getCurrentTextEditor() == nullptr)
         channelLabel.setText("Ch " + juce::String(engine.getMidiChannel(trackId)), juce::dontSendNotification);
     if (engine.isPluginLoaded(trackId))
