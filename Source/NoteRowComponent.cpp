@@ -73,10 +73,9 @@ NoteRowComponent::NoteRowComponent(Sequencer& sequencerIn, int noteIdIn)
     addAndMakeVisible(deleteButton);
 }
 
-void NoteRowComponent::refresh(const SequencerNote& note)
+void NoteRowComponent::refresh(const SequencerNote& note, int barIndex)
 {
     cachedNote = note;
-    const int barIndex = sequencer.getBarIndexForBeat(note.startBeat);
     const double relBeat = note.startBeat - sequencer.getBarStartBeat(barIndex) + 1.0;
 
     if (barLabel.getCurrentTextEditor() == nullptr)

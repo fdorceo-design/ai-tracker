@@ -12,7 +12,10 @@ public:
     NoteRowComponent(Sequencer& sequencerIn, int noteIdIn);
 
     int getNoteId() const { return noteId; }
-    void refresh(const SequencerNote& note);
+    // barIndex is precomputed by the caller (TrackEventListComponent),
+    // which already needs it for row layout -- avoids each row re-deriving
+    // it via another Sequencer::getBarIndexForBeat call/sort.
+    void refresh(const SequencerNote& note, int barIndex);
     void setHighlighted(bool shouldHighlight);
 
     void paint(juce::Graphics& g) override;

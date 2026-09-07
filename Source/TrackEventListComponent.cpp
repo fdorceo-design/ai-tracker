@@ -48,22 +48,32 @@ void TrackEventListComponent::applyBarLayout(const std::vector<BarBand>& bands)
             ++it;
     }
 
+    // Bar index is computed once per note here (it involves a mutex lock
+    // and a sort over the time-signature events) and threaded through to
+    // both the row's own display and the layout pass below, rather than
+    // each place re-deriving it independently.
+    std::vector<int> barIndices;
+    barIndices.reserve(mine.size());
+    for (const auto& n : mine)
+        barIndices.push_back(sequencer.getBarIndexForBeat(n.startBeat));
+
     std::vector<std::unique_ptr<NoteRowComponent>> reordered;
     reordered.reserve(mine.size());
-    for (const auto& n : mine)
+    for (size_t idx = 0; idx < mine.size(); ++idx)
     {
+        const auto& n = mine[idx];
         auto found = std::find_if(rows.begin(), rows.end(),
                                    [&](const std::unique_ptr<NoteRowComponent>& r) { return r->getNoteId() == n.id; });
         if (found != rows.end())
         {
-            (*found)->refresh(n);
+            (*found)->refresh(n, barIndices[idx]);
             reordered.push_back(std::move(*found));
             rows.erase(found);
         }
         else
         {
             auto row = std::make_unique<NoteRowComponent>(sequencer, n.id);
-            row->refresh(n);
+            row->refresh(n, barIndices[idx]);
             addAndMakeVisible(*row);
             reordered.push_back(std::move(row));
         }
@@ -81,7 +91,7 @@ void TrackEventListComponent::applyBarLayout(const std::vector<BarBand>& bands)
     for (size_t i = 0; i < rows.size(); ++i)
     {
         const auto& n = mine[i];
-        const int bar = sequencer.getBarIndexForBeat(n.startBeat);
+        const int bar = barIndices[i];
 
         if (!haveCurrentBar || bar != currentBar)
         {
