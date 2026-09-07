@@ -1,7 +1,6 @@
 #include "ApiServer.h"
 #include <httplib.h>
 #include <juce_core/juce_core.h>
-#include <juce_events/juce_events.h>
 #include <algorithm>
 
 namespace
@@ -31,22 +30,6 @@ namespace
         sendJson(res, juce::var(obj), ok ? okStatus : failStatus);
     }
 
-    void callOnMessageThreadSync(const std::function<void()>& fn)
-    {
-        if (juce::MessageManager::getInstance()->isThisTheMessageThread())
-        {
-            fn();
-            return;
-        }
-
-        juce::WaitableEvent done;
-        juce::MessageManager::callAsync([&fn, &done]
-        {
-            fn();
-            done.signal();
-        });
-        done.wait();
-    }
 }
 
 ApiServer::ApiServer(AudioEngine& engineToUse, Sequencer& seq)
@@ -149,11 +132,14 @@ bool ApiServer::start(int portToUse)
             return;
         }
 
+        // Loading now spawns a child process and waits on it (out-of-process
+        // hosting -- see PluginServerProxy), which no longer needs to run on
+        // the JUCE message thread; keeping this on the HTTP thread avoids
+        // blocking the GUI (and previously made the whole app appear to
+        // hang / show "Not Responding" for the duration of a slow or
+        // crashing load).
         juce::String errorMessage;
-        callOnMessageThreadSync([this, trackId, path, &errorMessage]
-        {
-            engine.loadPlugin(trackId, juce::File(path), [&errorMessage](juce::String err) { errorMessage = err; });
-        });
+        engine.loadPlugin(trackId, juce::File(path), [&errorMessage](juce::String err) { errorMessage = err; });
 
         auto* obj = new juce::DynamicObject();
         if (errorMessage.isNotEmpty())
@@ -173,7 +159,7 @@ bool ApiServer::start(int portToUse)
     server->Post(R"(/api/tracks/(\d+)/editor)", [this](const httplib::Request& req, httplib::Response& res)
     {
         const int trackId = std::stoi(req.matches[1].str());
-        callOnMessageThreadSync([this, trackId] { engine.showEditorWindow(trackId); });
+        engine.showEditorWindow(trackId);
         sendOk(res, true);
     });
 
@@ -288,8 +274,7 @@ bool ApiServer::start(int portToUse)
         }
 
         if (!juce::File::isAbsolutePath(path)) { sendOk(res, false, 200, 400); return; }
-        bool ok = false;
-        callOnMessageThreadSync([&] { ok = sequencer.exportToMidiFile(juce::File(path)); });
+        const bool ok = sequencer.exportToMidiFile(juce::File(path));
         auto* obj = new juce::DynamicObject();
         obj->setProperty("ok", ok);
         obj->setProperty("path", path);
@@ -308,9 +293,8 @@ bool ApiServer::start(int portToUse)
         if (!path.isEmpty() && !juce::File::isAbsolutePath(path)) { sendOk(res, false, 200, 400); return; }
         if (path.isNotEmpty() && !parsed.hasProperty("trackId"))
         {
-            juce::var result;
             const bool loadPlugins = (bool) parsed.getProperty("loadPlugins", true);
-            callOnMessageThreadSync([&] { result = sequencer.importMidiSession(juce::File(path), loadPlugins); });
+            const auto result = sequencer.importMidiSession(juce::File(path), loadPlugins);
             sendJson(res, result, (bool) result.getProperty("ok", false) ? 200 : 400);
             return;
         }

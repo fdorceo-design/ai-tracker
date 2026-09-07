@@ -1,216 +1,56 @@
 #include "Track.h"
-#include <juce_gui_extra/juce_gui_extra.h>
-
-#if JUCE_WINDOWS
- #include <windows.h>
-#endif
-
-namespace
-{
-#if JUCE_WINDOWS
-    int filterHardCrash(unsigned int code)
-    {
-        return (code == EXCEPTION_ACCESS_VIOLATION || code == EXCEPTION_STACK_OVERFLOW)
-                   ? EXCEPTION_EXECUTE_HANDLER
-                   : EXCEPTION_CONTINUE_SEARCH;
-    }
-
-    // May throw/allocate freely -- this frame is only ever called *from*
-    // createInstanceGuarded below, never contains a __try itself, so none of
-    // the SEH/C++-unwind restrictions apply here.
-    juce::AudioPluginInstance* doCreatePluginInstance(juce::AudioPluginFormatManager* formatManager,
-                                                       const juce::PluginDescription* description,
-                                                       double sampleRate, int blockSize,
-                                                       juce::String* outError)
-    {
-        auto instance = formatManager->createPluginInstance(*description, sampleRate, blockSize, *outError);
-        return instance.release();
-    }
-
-    // A plugin can crash outright while instantiating (seen in practice with
-    // Kontakt 8 -- an access violation inside DWrite.dll during its own
-    // startup). Wrapping the call in SEH means one bad plugin fails to load
-    // instead of taking the whole host down. MSVC forbids C++ objects with
-    // destructors in a function that contains __try, so this frame is kept
-    // to raw pointers/PODs only; the actual work happens in the function
-    // above.
-    juce::AudioPluginInstance* createInstanceGuarded(juce::AudioPluginFormatManager* formatManager,
-                                                      const juce::PluginDescription* description,
-                                                      double sampleRate, int blockSize,
-                                                      juce::String* outError, bool* crashed)
-    {
-        *crashed = false;
-        juce::AudioPluginInstance* result = nullptr;
-
-        __try
-        {
-            result = doCreatePluginInstance(formatManager, description, sampleRate, blockSize, outError);
-        }
-        __except (filterHardCrash(GetExceptionCode()))
-        {
-            result = nullptr;
-            *crashed = true;
-        }
-
-        return result;
-    }
-#else
-    juce::AudioPluginInstance* createInstanceGuarded(juce::AudioPluginFormatManager* formatManager,
-                                                      const juce::PluginDescription* description,
-                                                      double sampleRate, int blockSize,
-                                                      juce::String* outError, bool* crashed)
-    {
-        *crashed = false;
-        auto instance = formatManager->createPluginInstance(*description, sampleRate, blockSize, *outError);
-        return instance.release();
-    }
-#endif
-}
-
-class Track::PluginWindow : public juce::DocumentWindow
-{
-public:
-    PluginWindow(juce::AudioProcessorEditor* editor, std::function<void()> onCloseIn)
-        : DocumentWindow(editor->getName(),
-                          juce::Desktop::getInstance().getDefaultLookAndFeel()
-                              .findColour(juce::ResizableWindow::backgroundColourId),
-                          DocumentWindow::closeButton)
-        , onClose(std::move(onCloseIn))
-    {
-        setUsingNativeTitleBar(true);
-        setContentOwned(editor, true);
-        centreWithSize(getWidth(), getHeight());
-        setResizable(false, false);
-        setVisible(true);
-    }
-
-    void closeButtonPressed() override
-    {
-        if (onClose)
-            onClose();
-    }
-
-private:
-    std::function<void()> onClose;
-};
 
 Track::Track(int idIn, juce::String nameIn) : id(idIn), name(std::move(nameIn))
 {
 }
 
-Track::~Track()
+void Track::loadPlugin(const juce::File& file, double sampleRate, int blockSize,
+                        const std::function<void(juce::String)>& onError)
 {
-    hideEditorWindow();
-}
-
-void Track::loadPlugin(juce::AudioPluginFormatManager& formatManager, const juce::File& file,
-                        double sampleRate, int blockSize, const std::function<void(juce::String)>& onError)
-{
-    juce::OwnedArray<juce::PluginDescription> descriptions;
-    for (auto* format : formatManager.getFormats())
-        format->findAllTypesForFile(descriptions, file.getFullPathName());
-
-    if (descriptions.isEmpty())
+    proxy.loadPlugin(file, sampleRate, blockSize, onError);
+    if (proxy.isPluginLoaded())
     {
-        onError("No plugin found in " + file.getFullPathName());
-        return;
+        instrumentName = proxy.getPluginName();
+        pluginPath = file.getFullPathName();
     }
-
-    juce::String errorMessage;
-    bool crashed = false;
-    std::unique_ptr<juce::AudioPluginInstance> instance(
-        createInstanceGuarded(&formatManager, descriptions[0], sampleRate, blockSize, &errorMessage, &crashed));
-
-    if (crashed)
-    {
-        onError("Plugin crashed while loading -- it is likely incompatible with this host.");
-        return;
-    }
-    if (instance == nullptr)
-    {
-        onError(errorMessage);
-        return;
-    }
-
-    hideEditorWindow();
-    processor = std::move(instance);
-    instrumentName = processor->getName();
-    pluginPath = file.getFullPathName();
-    prepareToPlay(sampleRate, blockSize);
 }
 
 juce::String Track::getPluginName() const
 {
-    return processor != nullptr ? processor->getName() : instrumentName;
+    // Prefer the proxy's live name: once a plugin has loaded, it also
+    // reflects a subsequent crash (appends "(crashed)"), which the
+    // persisted instrumentName -- captured only at load time -- would
+    // otherwise silently hide.
+    const auto proxyName = proxy.getPluginName();
+    return proxyName.isNotEmpty() ? proxyName : instrumentName;
 }
 
 void Track::showEditorWindow()
 {
-    if (processor == nullptr)
-        return;
-
-    if (editorWindow != nullptr)
-    {
-        editorWindow->toFront(true);
-        return;
-    }
-
-    if (auto* editor = processor->createEditorIfNeeded())
-        editorWindow = std::make_unique<PluginWindow>(editor, [this] { hideEditorWindow(); });
-}
-
-void Track::hideEditorWindow()
-{
-    editorWindow = nullptr;
+    proxy.showEditorWindow();
 }
 
 void Track::prepareToPlay(double sampleRate, int blockSize)
 {
     currentSampleRate = sampleRate;
     currentBlockSize = blockSize;
-    midiCollector.reset(sampleRate);
-
-    if (processor != nullptr)
-    {
-        processor->setRateAndBufferSizeDetails(sampleRate, blockSize);
-        processor->prepareToPlay(sampleRate, blockSize);
-    }
 }
 
 void Track::releaseResources()
 {
-    if (processor != nullptr)
-        processor->releaseResources();
 }
 
 void Track::renderNextBlock(juce::AudioBuffer<float>& outputBuffer, int numSamples)
 {
-    if (processor == nullptr)
-        return;
-
-    const int numChannels = outputBuffer.getNumChannels();
-    scratchBuffer.setSize(numChannels, numSamples, false, false, true);
-    scratchBuffer.clear();
-
-    juce::MidiBuffer midi;
-    midiCollector.removeNextBlockOfMessages(midi, numSamples);
-
-    processor->processBlock(scratchBuffer, midi);
-
-    for (int ch = 0; ch < numChannels; ++ch)
-        outputBuffer.addFrom(ch, 0, scratchBuffer, ch, 0, numSamples);
+    proxy.renderNextBlock(outputBuffer, numSamples);
 }
 
 void Track::sendNoteOn(int channel, int noteNumber, float velocity)
 {
-    auto msg = juce::MidiMessage::noteOn(channel, noteNumber, velocity);
-    msg.setTimeStamp(juce::Time::getMillisecondCounterHiRes() * 0.001);
-    midiCollector.addMessageToQueue(msg);
+    proxy.sendNoteOn(channel, noteNumber, velocity);
 }
 
 void Track::sendNoteOff(int channel, int noteNumber)
 {
-    auto msg = juce::MidiMessage::noteOff(channel, noteNumber);
-    msg.setTimeStamp(juce::Time::getMillisecondCounterHiRes() * 0.001);
-    midiCollector.addMessageToQueue(msg);
+    proxy.sendNoteOff(channel, noteNumber);
 }

@@ -41,7 +41,6 @@ public:
 private:
     Track* findTrack(int trackId);
 
-    juce::AudioPluginFormatManager formatManager;
     juce::AudioDeviceManager deviceManager;
 
     juce::CriticalSection tracksLock;

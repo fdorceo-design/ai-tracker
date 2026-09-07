@@ -3,7 +3,6 @@
 
 AudioEngine::AudioEngine()
 {
-    formatManager.addDefaultFormats();
     deviceManager.initialiseWithDefaultDevices(0, 2);
     deviceManager.addAudioCallback(this);
 }
@@ -63,14 +62,23 @@ juce::String AudioEngine::getTrackName(int trackId)
 
 void AudioEngine::loadPlugin(int trackId, const juce::File& file, const std::function<void(juce::String)>& onError)
 {
-    const juce::ScopedLock lock(tracksLock);
-    auto* track = findTrack(trackId);
+    Track* track = nullptr;
+    {
+        const juce::ScopedLock lock(tracksLock);
+        track = findTrack(trackId);
+    }
     if (track == nullptr)
     {
         onError("Unknown track " + juce::String(trackId));
         return;
     }
-    track->loadPlugin(formatManager, file, sampleRate, blockSize, onError);
+    // Deliberately unlocked: loading blocks waiting on the child process
+    // (can legitimately take seconds for a large sample library), and
+    // holding tracksLock for that long would stall the real audio
+    // callback's ability to iterate/mix every other track. Safe because
+    // the pointer can't be invalidated concurrently -- track add/remove
+    // only ever happens from this same (JUCE message) thread.
+    track->loadPlugin(file, sampleRate, blockSize, onError);
 }
 
 bool AudioEngine::setTrackName(int trackId, juce::String name)
