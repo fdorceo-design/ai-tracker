@@ -1,8 +1,25 @@
 #include "MainComponent.h"
+#include <cmath>
 
 namespace
 {
     constexpr int apiPort = 8080;
+
+    // Converts a plain decimal (quarter note = 1) into the smallest N/D
+    // fraction with a power-of-two denominator that reproduces it -- e.g.
+    // 1.5 -> 3/8, 1.0 -> 1/4, 4.0 -> 4/4. Purely a display convenience;
+    // the app's own bar math only ever uses the quarter-note value itself.
+    std::pair<int, int> quarterBeatsToFraction(double quarterBeats)
+    {
+        for (int denominator : { 1, 2, 4, 8, 16, 32, 64 })
+        {
+            const double numerator = quarterBeats * denominator / 4.0;
+            const double rounded = std::round(numerator);
+            if (std::abs(numerator - rounded) < 0.001 && rounded >= 1.0)
+                return { (int) rounded, denominator };
+        }
+        return { juce::jmax(1, (int) std::round(quarterBeats * 64.0 / 4.0)), 64 };
+    }
 }
 
 namespace
@@ -83,7 +100,7 @@ MainComponent::MainComponent()
         const auto value = bpmLabel.getText().retainCharacters("0123456789.").getDoubleValue();
         if (value > 0.0)
             sequencer.setBpm(value);
-        bpmLabel.setText("BPM " + juce::String(sequencer.getBpm(), 0), juce::dontSendNotification);
+        bpmLabel.setText(juce::String(sequencer.getBpm(), 0), juce::dontSendNotification);
     };
     addAndMakeVisible(bpmLabel);
 
@@ -92,21 +109,21 @@ MainComponent::MainComponent()
     timeSignatureLabel.setColour(juce::Label::backgroundColourId, gbDark);
     timeSignatureLabel.onTextChange = [this]
     {
-        const auto text = timeSignatureLabel.getText();
-        const auto numerator = text.upToFirstOccurrenceOf("/", false, false)
-                                    .retainCharacters("0123456789").getIntValue();
-        // Denominator defaults to 4 if omitted (e.g. typing just "3") or
-        // unparsable, rather than silently keeping whatever it was before.
-        const auto denominatorText = text.fromFirstOccurrenceOf("/", false, false).retainCharacters("0123456789");
-        const auto denominator = denominatorText.isNotEmpty() ? denominatorText.getIntValue() : 4;
-        if (numerator > 0 && denominator > 0)
+        // Plain decimal input, quarter note = 1 (e.g. "1.5" for 3/8) --
+        // not "N/D" notation. Musical N/D is derived from it only for
+        // display; the value actually driving bar math is this number.
+        const auto quarterBeats = timeSignatureLabel.getText().retainCharacters("0123456789.").getDoubleValue();
+        if (quarterBeats > 0.0)
+        {
+            const auto [numerator, denominator] = quarterBeatsToFraction(quarterBeats);
             sequencer.setTimeSignature(numerator, denominator);
+        }
         timeSignatureLabel.setText(juce::String(sequencer.getBeatsPerBar()) + "/" + juce::String(sequencer.getTimeSigDenominator()),
                                     juce::dontSendNotification);
     };
     addAndMakeVisible(timeSignatureLabel);
 
-    bpmLabel.setText("BPM " + juce::String(sequencer.getBpm(), 0), juce::dontSendNotification);
+    bpmLabel.setText(juce::String(sequencer.getBpm(), 0), juce::dontSendNotification);
     timeSignatureLabel.setText(juce::String(sequencer.getBeatsPerBar()) + "/" + juce::String(sequencer.getTimeSigDenominator()),
                                 juce::dontSendNotification);
 
@@ -187,7 +204,7 @@ void MainComponent::timerCallback()
 
     // Avoid stomping the label while the user is actively editing it.
     if (bpmLabel.getCurrentTextEditor() == nullptr)
-        bpmLabel.setText("BPM " + juce::String(sequencer.getBpm(), 0), juce::dontSendNotification);
+        bpmLabel.setText(juce::String(sequencer.getBpm(), 0), juce::dontSendNotification);
     if (timeSignatureLabel.getCurrentTextEditor() == nullptr)
         timeSignatureLabel.setText(juce::String(sequencer.getBeatsPerBar()) + "/" + juce::String(sequencer.getTimeSigDenominator()),
                                     juce::dontSendNotification);
