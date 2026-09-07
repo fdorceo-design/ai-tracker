@@ -5,6 +5,7 @@
 #include "Sequencer.h"
 #include "ApiServer.h"
 #include "TrackerContentComponent.h"
+#include "TrackHeadersBar.h"
 #include "TempoMapColumn.h"
 #include "PlaybackMaskOverlay.h"
 
@@ -45,6 +46,14 @@ private:
     juce::Label timeSignatureLabel;
     juce::Label positionLabel;
     juce::Label apiLabel;
+
+    // Header row (name/channel/load/editor/remove) in its own horizontal-
+    // scroll-only viewport, fixed at the top -- stays visible while the
+    // note grid below scrolls vertically. Its horizontal scroll position is
+    // mirrored from trackerViewport's every tick so the columns stay
+    // aligned; it never scrolls on its own.
+    juce::Viewport headerViewport;
+    TrackHeadersBar trackHeadersBar { engine };
 
     juce::Viewport trackerViewport;
     TrackerContentComponent trackerContent { engine, sequencer };

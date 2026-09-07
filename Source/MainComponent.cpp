@@ -165,6 +165,12 @@ MainComponent::MainComponent()
     for (int i = 0; i < 2; ++i)
         engine.addTrack({});
 
+    headerViewport.setViewedComponent(&trackHeadersBar, false);
+    headerViewport.setScrollBarsShown(false, false);
+    headerViewport.setScrollOnDragMode(juce::Viewport::ScrollOnDragMode::never);
+    addAndMakeVisible(headerViewport);
+    trackHeadersBar.refreshTracks();
+
     trackerViewport.setViewedComponent(&trackerContent, false);
     addAndMakeVisible(trackerViewport);
     trackerContent.refreshTracks();
@@ -254,6 +260,13 @@ void MainComponent::resized()
     apiLabel.setBounds(area.removeFromTop(24));
     area.removeFromTop(10);
 
+    // Header row sits directly above the tracker body, aligned with its
+    // track columns (not the tempo/time-sig strip to its left, which has
+    // no header of its own).
+    auto headerRow = area.removeFromTop(TrackHeadersBar::headerHeight);
+    headerRow.removeFromLeft(tempoColumnWidth);
+    headerViewport.setBounds(headerRow);
+
     tempoMapColumn.setBounds(area.removeFromLeft(tempoColumnWidth));
     trackerViewport.setBounds(area);
 
@@ -264,7 +277,13 @@ void MainComponent::resized()
 
 void MainComponent::timerCallback()
 {
+    trackHeadersBar.refreshTracks();
     trackerContent.refreshTracks();
+
+    // Keep the fixed header row horizontally aligned with the scrolling
+    // note grid below it -- it never scrolls on its own (setScrollOnDrag-
+    // Enabled(false), no scrollbars), only mirrors this.
+    headerViewport.setViewPosition(trackerViewport.getViewPositionX(), 0);
 
     // Avoid stomping the label while the user is actively editing it.
     if (bpmLabel.getCurrentTextEditor() == nullptr)

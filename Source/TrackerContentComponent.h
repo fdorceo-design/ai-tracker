@@ -3,24 +3,26 @@
 #include <juce_gui_extra/juce_gui_extra.h>
 #include "AudioEngine.h"
 #include "Sequencer.h"
-#include "TrackRowComponent.h"
 #include "TrackEventListComponent.h"
 #include "BarBand.h"
 
-// Combines per-track headers (name/load/editor/remove) with a sparse,
-// variable-length event list per track below them -- rows exist only where
-// notes exist (Music-kun/Recomposer style). A shared bar-band layout is
-// computed once from every track's notes so bar boundaries line up at the
-// same pixel height across every column; the boundary lines themselves are
-// drawn here (once, spanning the full width) rather than per-column.
+// A sparse, variable-length event list per track (rows exist only where
+// notes exist -- Music-kun/Recomposer style), one column per track. A
+// shared bar-band layout is computed once from every track's notes so bar
+// boundaries line up at the same pixel height across every column; the
+// boundary lines themselves are drawn here (once, spanning the full width)
+// rather than per-column. Per-track headers used to live here too but were
+// pulled out into TrackHeadersBar so they can stay fixed on screen while
+// this scrolls vertically -- this component's own coordinate space now
+// starts right at row 1, with no header-height offset.
 class TrackerContentComponent : public juce::Component
 {
 public:
     TrackerContentComponent(AudioEngine& engineIn, Sequencer& sequencerIn);
 
-    // Reconciles headers and event lists against the engine's current
-    // tracks (tracks can appear outside the UI, e.g. via the API or MIDI
-    // import), recomputes the shared bar layout, then resizes to fit.
+    // Reconciles event lists against the engine's current tracks (tracks
+    // can appear outside the UI, e.g. via the API or MIDI import),
+    // recomputes the shared bar layout, then resizes to fit.
     void refreshTracks();
 
     void resized() override;
@@ -42,12 +44,9 @@ public:
     static constexpr int columnWidth = 280;
 
 private:
-    static constexpr int headerHeight = 152;
-
     AudioEngine& engine;
     Sequencer& sequencer;
     std::vector<int> trackOrder;
-    std::vector<std::unique_ptr<TrackRowComponent>> headers;
     std::vector<std::unique_ptr<TrackEventListComponent>> eventLists;
     std::vector<BarBand> barBands;
 

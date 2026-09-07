@@ -12,38 +12,6 @@ void TrackerContentComponent::refreshTracks()
 {
     const auto ids = engine.getTrackIds();
 
-    // Headers.
-    for (auto it = headers.begin(); it != headers.end();)
-    {
-        if (std::find(ids.begin(), ids.end(), (*it)->getTrackId()) == ids.end())
-            it = headers.erase(it);
-        else
-            ++it;
-    }
-    {
-        std::vector<std::unique_ptr<TrackRowComponent>> reordered;
-        reordered.reserve(ids.size());
-        for (auto id : ids)
-        {
-            auto found = std::find_if(headers.begin(), headers.end(),
-                                       [id](const std::unique_ptr<TrackRowComponent>& h) { return h->getTrackId() == id; });
-            if (found != headers.end())
-            {
-                reordered.push_back(std::move(*found));
-                headers.erase(found);
-            }
-            else
-            {
-                auto header = std::make_unique<TrackRowComponent>(engine, id, [this, id] { engine.removeTrack(id); });
-                addAndMakeVisible(*header);
-                reordered.push_back(std::move(header));
-            }
-        }
-        headers = std::move(reordered);
-    }
-    for (auto& h : headers)
-        h->refreshStatus();
-
     // Event lists.
     for (auto it = eventLists.begin(); it != eventLists.end();)
     {
@@ -129,7 +97,7 @@ void TrackerContentComponent::refreshTracks()
 
     const int width = juce::jmax(1, (int) trackOrder.size()) * columnWidth;
     const int fixedHeaderPart = TrackEventListComponent::captionHeight + TrackEventListComponent::rowHeight;
-    setSize(width, headerHeight + fixedHeaderPart + juce::jmax(60, notesAreaHeight));
+    setSize(width, fixedHeaderPart + juce::jmax(60, notesAreaHeight));
     resized();
 
     // The bar lines are decoration drawn by this component itself (not a
@@ -153,10 +121,8 @@ void TrackerContentComponent::resized()
     int x = 0;
     for (size_t i = 0; i < trackOrder.size(); ++i)
     {
-        if (i < headers.size())
-            headers[i]->setBounds(x, 0, columnWidth, headerHeight);
         if (i < eventLists.size())
-            eventLists[i]->setBounds(x, headerHeight, columnWidth, getHeight() - headerHeight);
+            eventLists[i]->setBounds(x, 0, columnWidth, getHeight());
         x += columnWidth;
     }
 }
@@ -165,7 +131,7 @@ void TrackerContentComponent::paintOverChildren(juce::Graphics& g)
 {
     // Drawn once here (not per-column) so every column's bar line lands at
     // exactly the same pixel height.
-    const int baseY = headerHeight + TrackEventListComponent::captionHeight + TrackEventListComponent::rowHeight;
+    const int baseY = TrackEventListComponent::captionHeight + TrackEventListComponent::rowHeight;
     g.setColour(juce::Colour(0xff9bbc0f));
     for (size_t i = 1; i < barBands.size(); ++i)
         g.fillRect(0, baseY + barBands[i].yPixel - 1, getWidth(), 2);
@@ -180,7 +146,7 @@ void TrackerContentComponent::paintOverChildren(juce::Graphics& g)
 
 int TrackerContentComponent::getYForBeat(double beat) const
 {
-    const int baseY = headerHeight + TrackEventListComponent::captionHeight + TrackEventListComponent::rowHeight;
+    const int baseY = TrackEventListComponent::captionHeight + TrackEventListComponent::rowHeight;
     if (barBands.empty())
         return baseY;
 
