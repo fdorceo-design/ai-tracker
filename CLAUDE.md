@@ -1,5 +1,30 @@
 # AI Tracker — notes for Claude
 
+## MIDI note number / octave-name convention
+
+`pitch` in the API is always the raw MIDI note number (0-127) — that part is
+unambiguous. Converting a spoken/written note *name* (e.g. "C0", "F#-1") to a
+MIDI number is where things go wrong: different tools (and different Kontakt
+preference settings) disagree on which octave "C0" or "middle C" means, and
+getting it wrong shifts everything by a full octave *with no error* — it
+just silently plays/switches the wrong thing.
+
+**For Kontakt keyswitches specifically, don't compute the MIDI number from a
+stated octave-naming convention at all — verify it empirically.** Send a
+candidate note and read the actual articulation name Kontakt displays (top
+of the instrument panel). Three different octave-naming assumptions were
+tried in this project for the same keyswitch bank and all three were wrong;
+what actually worked was sending `MIDI 0` upward directly (the keyswitch
+zone's own articulation list, 0-indexed from absolute MIDI 0), no name
+conversion involved. See
+[Kontakt-Sacconi-Keyswitches.md](Kontakt-Sacconi-Keyswitches.md) for the
+verified table and how it was confirmed.
+
+Kontakt UI note: the small red/blue range-indicator keyboard on an
+instrument's header can visually reset/disappear without the underlying
+articulation actually changing — it's not a reliable signal. Trust the
+articulation name label instead.
+
 ## Composition conventions
 
 - Beats are 0-indexed and bar lines are computed as
