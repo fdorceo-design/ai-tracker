@@ -15,6 +15,8 @@ the same session through a Tracker-style GUI. JUCE/C++, CMake build.
   the rest of the reference docs below. That's the right file regardless of
   which AI/agent you are.
 
+![AI Tracker default state](ai-tracker-default-state.png)
+
 ## Quick start
 
 Build (CMake + Visual Studio, JUCE fetched automatically):
