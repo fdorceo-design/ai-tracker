@@ -142,3 +142,10 @@ standalone app manually before AI Tracker is already running.
   (Blueprint, Main Catalog; 50 instruments so far). Same policy as
   MODWHEEL above: exact keyswitch note numbers are only recorded where
   Fracture Sounds explicitly publishes them.
+- [Embertone-Keyswitches/](Embertone-Keyswitches/README.md) — Embertone
+  Kontakt libraries (37 instruments, current catalog). Same
+  don't-guess-the-MIDI-number policy as MODWHEEL/Fracture Sounds above.
+  Additionally: Embertone frequently ships the real manual inside the
+  installed `Documentation`/`Extras` folder rather than on the product
+  page — check there before concluding a mapping isn't documented
+  anywhere.

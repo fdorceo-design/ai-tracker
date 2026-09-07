@@ -99,3 +99,11 @@ permitted with attribution.
     instruments total so far). As with MODWHEEL, exact keyswitch note
     numbers are only recorded where officially published.
     (Fracture SoundsのKontakt音源。製品シリーズごとにフォルダ分け(現在はBlueprintシリーズと有償のMain Catalogシリーズ、計50種)。MODWHEELと同様、公式に明記がある場合のみキースイッチ番号を記載しています。)
+  - [Embertone-Keyswitches/](Embertone-Keyswitches/README.md) — Embertone
+    Kontakt libraries (37 instruments in the current catalog). Same
+    policy as MODWHEEL/Fracture Sounds: exact keyswitch numbers only
+    where officially published. Note: Embertone often ships detailed
+    manuals inside the installed `Documentation`/`Extras` folder rather
+    than on the product page — an installed manual overrides this
+    summary.
+    (Embertoneのkontakt音源(現行カタログ37種)。MODWHEEL/Fracture Soundsと同様の方針。注: Embertoneは製品ページよりインストール後の`Documentation`/`Extras`フォルダに詳細マニュアルを同梱することが多く、インストール済みマニュアルがあればこの要約より優先されます。)
