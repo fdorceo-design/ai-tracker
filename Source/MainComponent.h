@@ -17,6 +17,13 @@ public:
     void paint(juce::Graphics& g) override;
     void resized() override;
 
+    // Width of the left-edge BPM/time-signature strip, plus the outer
+    // margin used around the whole layout -- exposed so Main.cpp can size
+    // the default window width off "N tracks wide" without duplicating
+    // these numbers.
+    static constexpr int tempoColumnWidth = 56;
+    static constexpr int outerMargin = 20;
+
 private:
     void timerCallback() override;
 
@@ -37,6 +44,9 @@ private:
     juce::Viewport trackerViewport;
     TrackerContentComponent trackerContent { engine, sequencer };
     TempoMapColumn tempoMapColumn { sequencer, trackerContent };
+    // Floats over the top-right corner of the viewport (not part of its
+    // scrolling content) to jump straight back to beat 0 vertically.
+    juce::TextButton scrollToTopButton;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
 };

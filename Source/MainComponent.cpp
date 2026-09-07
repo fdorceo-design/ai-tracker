@@ -140,15 +140,23 @@ MainComponent::MainComponent()
     apiLabel.setJustificationType(juce::Justification::centred);
     addAndMakeVisible(apiLabel);
 
-    // Start with 3 empty tracks already visible rather than an empty grid --
+    // Start with 2 empty tracks already visible rather than an empty grid --
     // BPM 120 / 4/4 are already Sequencer's own defaults, nothing to set.
-    for (int i = 0; i < 3; ++i)
+    // The default window width (see Main.cpp) fits 4 columns, so there's
+    // room to add 2 more with "+ Add Track" before any horizontal scrolling
+    // is needed.
+    for (int i = 0; i < 2; ++i)
         engine.addTrack({});
 
     trackerViewport.setViewedComponent(&trackerContent, false);
     addAndMakeVisible(trackerViewport);
     trackerContent.refreshTracks();
     addAndMakeVisible(tempoMapColumn);
+
+    scrollToTopButton.setButtonText(juce::CharPointer_UTF8("\xe2\x96\xb3")); // "△"
+    scrollToTopButton.onClick = [this] { trackerViewport.setViewPosition(trackerViewport.getViewPositionX(), 0); };
+    addAndMakeVisible(scrollToTopButton);
+    scrollToTopButton.toFront(false);
 
     if (apiServer.start(apiPort))
         apiLabel.setText("API: http://127.0.0.1:" + juce::String(apiPort), juce::dontSendNotification);
@@ -172,7 +180,7 @@ void MainComponent::paint(juce::Graphics& g)
 
 void MainComponent::resized()
 {
-    auto area = getLocalBounds().reduced(20);
+    auto area = getLocalBounds().reduced(outerMargin);
     titleLabel.setBounds(area.removeFromTop(30));
     area.removeFromTop(10);
 
@@ -194,8 +202,12 @@ void MainComponent::resized()
     apiLabel.setBounds(area.removeFromTop(24));
     area.removeFromTop(10);
 
-    tempoMapColumn.setBounds(area.removeFromLeft(56));
+    tempoMapColumn.setBounds(area.removeFromLeft(tempoColumnWidth));
     trackerViewport.setBounds(area);
+
+    constexpr int scrollTopButtonSize = 26;
+    scrollToTopButton.setBounds(area.getRight() - scrollTopButtonSize - 4, area.getY() + 4,
+                                 scrollTopButtonSize, scrollTopButtonSize);
 }
 
 void MainComponent::timerCallback()

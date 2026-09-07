@@ -39,12 +39,17 @@ public:
             setUsingNativeTitleBar(true);
             setContentOwned(new MainComponent(), true);
 
-            // Default position/size: top-left of the screen, sized off a
-            // 1080p reference (80% height, 50% width) rather than centred --
-            // scales with the actual display via juce::Desktop, so this
-            // still lands sensibly at other resolutions.
+            // Default position: top-left of the screen rather than centred.
+            // Height is 80% of the display (a 1080p-ish reference, scaled
+            // via juce::Desktop so other resolutions still land sensibly).
+            // Width fits exactly 4 track columns -- the grid starts with
+            // only 2 tracks, so there's room to add 2 more via
+            // "+ Add Track" before horizontal scrolling is needed.
             const auto displayArea = juce::Desktop::getInstance().getDisplays().getPrimaryDisplay()->userArea;
-            const int width = (int) (displayArea.getWidth() * 0.5);
+            constexpr int scrollbarAllowance = 20;
+            const int width = juce::jmin(displayArea.getWidth(),
+                                          2 * MainComponent::outerMargin + MainComponent::tempoColumnWidth
+                                              + 4 * TrackerContentComponent::columnWidth + scrollbarAllowance);
             const int height = (int) (displayArea.getHeight() * 0.8);
             setBounds(displayArea.getX(), displayArea.getY(), width, height);
 

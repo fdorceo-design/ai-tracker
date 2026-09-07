@@ -32,9 +32,12 @@ public:
     // since rows are a sparse per-track layout rather than a fixed timeline.
     int getYForBeat(double beat) const;
 
+    // Public so the app window can size its default width off "N tracks
+    // wide" instead of a hand-tuned pixel guess.
+    static constexpr int columnWidth = 280;
+
 private:
     static constexpr int headerHeight = 152;
-    static constexpr int columnWidth = 280;
 
     AudioEngine& engine;
     Sequencer& sequencer;
