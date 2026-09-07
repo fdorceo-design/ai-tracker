@@ -107,3 +107,15 @@ permitted with attribution.
     than on the product page — an installed manual overrides this
     summary.
     (Embertoneのkontakt音源(現行カタログ37種)。MODWHEEL/Fracture Soundsと同様の方針。注: Embertoneは製品ページよりインストール後の`Documentation`/`Extras`フォルダに詳細マニュアルを同梱することが多く、インストール済みマニュアルがあればこの要約より優先されます。)
+  - [Crow-Hill-Keyswitches/](Crow-Hill-Keyswitches/README.md) — The Crow
+    Hill Company libraries (42 current non-free products, free
+    instruments deliberately excluded). Same don't-guess-the-note
+    policy; the installed plugin/manual is the final authority where its
+    UI shows the active articulation and keyswitch location.
+    (The Crow Hill Companyの音源(現行の非フリー製品42種、フリー音源は意図的に対象外)。番号を推測しない方針は共通。UIで現在の奏法とキースイッチ位置が表示されるライブラリでは、インストール済みプラグイン/マニュアルが最終的な正となります。)
+  - [Impact-Soundworks-Keyswitches/](Impact-Soundworks-Keyswitches/README.md) —
+    Impact Soundworks libraries, split by Kontakt edition requirement:
+    Full Kontakt (34 products) and Kontakt Player compatible (58
+    products) — kept as separate sets since edition compatibility
+    differs per product. Same don't-guess-the-note policy.
+    (Impact Soundworksの音源。必要なKontaktエディションで分類(フルKontakt版34種、Kontakt Player対応版58種)— 製品ごとに対応エディションが異なるため別セットにしています。番号を推測しない方針は共通。)

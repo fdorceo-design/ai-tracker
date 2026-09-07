@@ -149,3 +149,15 @@ standalone app manually before AI Tracker is already running.
   installed `Documentation`/`Extras` folder rather than on the product
   page — check there before concluding a mapping isn't documented
   anywhere.
+- [Crow-Hill-Keyswitches/](Crow-Hill-Keyswitches/README.md) — The Crow
+  Hill Company libraries (42 current non-free products). Same
+  don't-guess-the-note policy; where a library's UI shows the active
+  articulation and keyswitch location, the installed plugin/manual is
+  the final authority over this doc.
+- [Impact-Soundworks-Keyswitches/](Impact-Soundworks-Keyswitches/README.md) —
+  Impact Soundworks libraries, split into two separate sets by Kontakt
+  edition requirement: `Full_Kontakt/` (34 products needing full paid
+  Kontakt) and `Kontakt_Player/` (58 Kontakt-Player-compatible
+  products). Check which set a given product is in before assuming it
+  loads in Kontakt Player. Configurable/remappable articulation layouts
+  are treated as mapping-flexible, not one fixed global layout.
