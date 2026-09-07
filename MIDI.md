@@ -57,8 +57,15 @@ Some VST3 instruments (Kontakt 8, UJAM's BM-* line, and Synthesizer V were
 confirmed) reliably fail to instantiate no matter how they're hosted --
 in-process, out-of-process, with or without a device, synchronous or async.
 Root cause undiagnosed after extensive investigation; only a live debugger
-session would narrow it further. For these, route the track's notes to a
-real standalone build of the instrument instead:
+session would narrow it further. One unconfirmed guess: every plugin that
+failed exposes multiple audio output busses (Kontakt's multi-out routing,
+UJAM's stem outs, Synth V's separate voice busses) -- this host only ever
+negotiates a single stereo output bus, so a plugin defaulting to or
+requiring a multi-out configuration might be instantiating into a bus
+layout this host never offers it. Not verified against a single-output
+plugin known to fail, so treat it as a lead, not a diagnosis. For these,
+route the track's notes to a real standalone build of the instrument
+instead:
 
 1. Install a virtual MIDI cable driver -- **loopMIDI**
    (https://www.tobias-erichsen.de/software/loopmidi.html) is free and known
