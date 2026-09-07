@@ -175,6 +175,9 @@ MainComponent::MainComponent()
     addAndMakeVisible(scrollToTopButton);
     scrollToTopButton.toFront(false);
 
+    addAndMakeVisible(playbackMask);
+    playbackMask.toFront(false);
+
     if (apiServer.start(apiPort))
         apiLabel.setText("API: http://127.0.0.1:" + juce::String(apiPort), juce::dontSendNotification);
     else
@@ -223,6 +226,8 @@ void MainComponent::paint(juce::Graphics& g)
 
 void MainComponent::resized()
 {
+    playbackMask.setBounds(getLocalBounds());
+
     auto area = getLocalBounds().reduced(outerMargin);
     titleLabel.setBounds(area.removeFromTop(30));
     area.removeFromTop(10);
@@ -277,19 +282,27 @@ void MainComponent::timerCallback()
 
     if (sequencer.isPlaying())
     {
-        const int y = trackerContent.getYForBeat(sequencer.getPositionBeats());
-        auto viewPos = trackerViewport.getViewPosition();
-        const int viewportHeight = trackerViewport.getHeight();
-        const int margin = viewportHeight / 3;
-
-        if (y < viewPos.y + margin)
-            viewPos.y = juce::jmax(0, y - margin);
-        else if (y > viewPos.y + viewportHeight - margin)
-            viewPos.y = y - viewportHeight + margin;
-
-        trackerViewport.setViewPosition(viewPos);
+        // Snaps rather than follows smoothly: only jumps when the playing
+        // bar itself changes, straight to the position where that bar's
+        // first row sits as the viewport's 2nd displayed row -- a
+        // deliberate jolt at each bar change, not a continuous scroll.
+        const int bar = sequencer.getBarIndexForBeat(sequencer.getPositionBeats());
+        if (bar != lastScrolledBar)
+        {
+            lastScrolledBar = bar;
+            const double barStartBeat = sequencer.getBarStartBeat(bar);
+            const int bandY = trackerContent.getYForBeat(barStartBeat);
+            auto viewPos = trackerViewport.getViewPosition();
+            viewPos.y = juce::jmax(0, bandY - TrackEventListComponent::rowHeight);
+            trackerViewport.setViewPosition(viewPos);
+        }
+    }
+    else
+    {
+        lastScrolledBar = -1;
     }
 
     tempoMapColumn.setScrollOffsetY(trackerViewport.getViewPositionY());
     tempoMapColumn.repaint();
+    playbackMask.repaint();
 }

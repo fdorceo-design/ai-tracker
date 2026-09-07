@@ -6,6 +6,7 @@
 #include "ApiServer.h"
 #include "TrackerContentComponent.h"
 #include "TempoMapColumn.h"
+#include "PlaybackMaskOverlay.h"
 
 class MainComponent : public juce::Component,
                        private juce::Timer
@@ -51,6 +52,17 @@ private:
     // Floats over the top-right corner of the viewport (not part of its
     // scrolling content) to jump straight back to beat 0 vertically.
     juce::TextButton scrollToTopButton;
+
+    // Dims everything except the currently-playing bar and the transport's
+    // Pause/Stop buttons while playing. Added last / kept in front so it
+    // draws over everything else.
+    PlaybackMaskOverlay playbackMask { sequencer, trackerViewport, trackerContent, pauseButton, stopButton };
+
+    // The playing bar last snapped to -- so the auto-scroll below only
+    // jumps when it actually changes (a deliberate snap, not a smooth
+    // follow), and resets when playback stops so the next play starts
+    // with a fresh snap instead of assuming the old scroll position.
+    int lastScrolledBar = -1;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
 };

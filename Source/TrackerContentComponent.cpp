@@ -194,3 +194,18 @@ int TrackerContentComponent::getYForBeat(double beat) const
         return baseY;
     return baseY + barBands.back().yPixel;
 }
+
+juce::Rectangle<int> TrackerContentComponent::getBandRectForBeat(double beat) const
+{
+    if (barBands.empty())
+        return {};
+
+    const int bar = sequencer.getBarIndexForBeat(beat);
+    const auto found = std::find_if(barBands.begin(), barBands.end(),
+                                     [bar](const BarBand& b) { return b.barIndex == bar; });
+    if (found == barBands.end())
+        return {};
+
+    const int y = getYForBeat(beat);
+    return { 0, y, getWidth(), found->rowCount * TrackEventListComponent::rowHeight };
+}

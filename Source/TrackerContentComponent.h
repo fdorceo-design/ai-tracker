@@ -32,6 +32,11 @@ public:
     // since rows are a sparse per-track layout rather than a fixed timeline.
     int getYForBeat(double beat) const;
 
+    // Full-width rectangle (in this component's own coordinate space) of
+    // the bar band containing the given beat -- top/height of the row band
+    // spanning all track columns. Empty if there's no band data yet.
+    juce::Rectangle<int> getBandRectForBeat(double beat) const;
+
     // Public so the app window can size its default width off "N tracks
     // wide" instead of a hand-tuned pixel guess.
     static constexpr int columnWidth = 280;
