@@ -34,6 +34,7 @@ public:
     // separately-running standalone synth). Returns false if no such
     // device is currently available.
     bool routeToExternalMidi(int trackId, const juce::String& deviceName);
+    bool isExternalMidiRouted(int trackId);
     static juce::StringArray getAvailableMidiOutputDevices();
 
     // Launches a completely independent process (e.g. a standalone synth

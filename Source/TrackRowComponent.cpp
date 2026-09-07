@@ -14,6 +14,9 @@ TrackRowComponent::TrackRowComponent(AudioEngine& engineIn, int trackIdIn, std::
     loadButton.onClick = [this] { loadClicked(); };
     addAndMakeVisible(loadButton);
 
+    toMidiButton.onClick = [this] { toMidiClicked(); };
+    addAndMakeVisible(toMidiButton);
+
     editorButton.onClick = [this] { engine.showEditorWindow(trackId); };
     editorButton.setEnabled(false);
     addAndMakeVisible(editorButton);
@@ -35,7 +38,9 @@ void TrackRowComponent::resized()
     area.removeFromTop(2);
     statusLabel.setBounds(area.removeFromTop(28));
     area.removeFromTop(2);
-    loadButton.setBounds(area.removeFromTop(22));
+    auto loadRow = area.removeFromTop(22);
+    loadButton.setBounds(loadRow.removeFromLeft(loadRow.getWidth() / 2).reduced(1, 0));
+    toMidiButton.setBounds(loadRow.reduced(1, 0));
     area.removeFromTop(2);
     auto buttonRow = area.removeFromTop(22);
     editorButton.setBounds(buttonRow.removeFromLeft(buttonRow.getWidth() / 2).reduced(1, 0));
@@ -67,13 +72,42 @@ void TrackRowComponent::loadClicked()
         });
 }
 
+void TrackRowComponent::toMidiClicked()
+{
+    const auto devices = AudioEngine::getAvailableMidiOutputDevices();
+
+    juce::PopupMenu menu;
+    if (devices.isEmpty())
+    {
+        menu.addItem(1, "No MIDI output devices found", false);
+    }
+    else
+    {
+        for (int i = 0; i < devices.size(); ++i)
+            menu.addItem(i + 1, devices[i]);
+    }
+
+    menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(toMidiButton),
+        [this, devices](int result)
+        {
+            if (result <= 0 || result > devices.size())
+                return;
+
+            const auto device = devices[result - 1];
+            if (!engine.routeToExternalMidi(trackId, device))
+                statusLabel.setText("Failed: MIDI device not found", juce::dontSendNotification);
+
+            refreshStatus();
+        });
+}
+
 void TrackRowComponent::refreshStatus()
 {
     nameLabel.setText(engine.getTrackName(trackId), juce::dontSendNotification);
     if (engine.isPluginLoaded(trackId))
     {
         statusLabel.setText("Loaded: " + engine.getPluginName(trackId), juce::dontSendNotification);
-        editorButton.setEnabled(true);
+        editorButton.setEnabled(!engine.isExternalMidiRouted(trackId));
     }
     else
     {

@@ -47,6 +47,37 @@ are not split; notes play on channel 1.
 MIDI does not save plugin presets, mixer settings, effects, or sample library
 state. This feature restores instrument identity, not an exact audio session.
 
+## External MIDI routing (fallback for un-hostable plugins)
+
+Some VST3 instruments (Kontakt 8, UJAM's BM-* line, and Synthesizer V were
+confirmed) reliably fail to instantiate no matter how they're hosted --
+in-process, out-of-process, with or without a device, synchronous or async.
+Root cause undiagnosed after extensive investigation; only a live debugger
+session would narrow it further. For these, route the track's notes to a
+real standalone build of the instrument instead:
+
+1. Install a virtual MIDI cable driver -- **loopMIDI**
+   (https://www.tobias-erichsen.de/software/loopmidi.html) is free and known
+   to work. Open it and create one port. A generic name like
+   `AI Tracker to Standalone` is recommended over naming it after one
+   specific plugin (e.g. "...to Kontakt"), since the same port works for
+   any standalone app you route to.
+2. In the standalone app (e.g. Kontakt 8 Standalone), set that virtual port
+   as its MIDI input and your real interface as its audio output.
+3. In AI Tracker, click a track's **toMIDI** button (or
+   `POST /api/tracks/:id/midi-output {"device":"<port name>"}`) and pick the
+   virtual port from the list (`GET /api/midi-outputs`).
+4. Optionally launch the standalone app itself via
+   `POST /api/launch-app {"path":"C:\\...\\Kontakt 8.exe"}`.
+
+Audio from a track routed this way plays directly from the standalone app to
+your real output device -- it is not mixed through AI Tracker, so it will
+not appear in offline renders and has no level metering here. This trades
+integration for reliability; auto-creating the virtual port programmatically
+(via the teVirtualMIDI SDK loopMIDI itself is built on) was considered but
+deferred -- it needs the SDK's exact C API, which requires downloading and
+verifying Tobias Erichsen's SDK package rather than guessing signatures.
+
 ## Verification
 
 Run `"AI Tracker.exe" --midi-self-test "C:\\absolute\\test-output"` to test

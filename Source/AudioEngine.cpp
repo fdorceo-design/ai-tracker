@@ -108,6 +108,13 @@ bool AudioEngine::routeToExternalMidi(int trackId, const juce::String& deviceNam
     return track != nullptr && track->routeToExternalMidi(deviceName);
 }
 
+bool AudioEngine::isExternalMidiRouted(int trackId)
+{
+    const juce::ScopedLock lock(tracksLock);
+    auto* track = findTrack(trackId);
+    return track != nullptr && track->isExternalMidiRouted();
+}
+
 juce::StringArray AudioEngine::getAvailableMidiOutputDevices()
 {
     juce::StringArray names;

@@ -15,6 +15,7 @@ public:
 
 private:
     void loadClicked();
+    void toMidiClicked();
 
     AudioEngine& engine;
     int trackId;
@@ -22,6 +23,7 @@ private:
 
     juce::Label nameLabel;
     juce::TextButton loadButton{"Load VST3..."};
+    juce::TextButton toMidiButton{"toMIDI"};
     juce::TextButton editorButton{"Editor"};
     juce::TextButton removeButton{"Remove"};
     juce::Label statusLabel;
