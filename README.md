@@ -31,6 +31,15 @@ Run `build/AiTracker_artefacts/Release/AI Tracker.exe` — keep
 automatically by the build). The app opens an HTTP API on port 8080 and a
 GUI window at the same time; both operate the same live session.
 
+Prebuilt binaries are also available as a zip in the repo — it only needs
+`AI Tracker.exe` and `AiTrackerPluginServer.exe` together in the same
+folder to run.
+
+## License
+
+[CC BY-NC 4.0](LICENSE) — copyright is retained; noncommercial use,
+redistribution, and modification are permitted with attribution.
+
 ## Reference docs
 
 - **[AGENTS.md](AGENTS.md)** — composition/API conventions for an AI
