@@ -23,8 +23,12 @@ manually appended to the part name.
 one engine track per MIDI note track. Empty tracks carrying AI Tracker metadata
 are also restored. Existing tracks are retained. Playback stops and resets;
 the initial MIDI tempo is restored, and the loop covers the resulting notes,
-rounded up to a four-beat boundary. Later tempo changes and meter maps are not
-supported by this sequencer.
+rounded up to a four-beat boundary. The importer only reads the tempo at
+time 0 — it does not parse later tempo-change or time-signature meta events
+out of the file into scheduled events. The sequencer itself does support
+mid-piece tempo and meter changes, just not by reading them from an imported
+file automatically; see `POST /api/tempo-events` and `POST
+/api/timesig-events` to add them explicitly after import.
 
 VST3 instruments are loaded on the message thread from their saved paths.
 If a path is missing, the same filename in the standard Windows VST3 directory
