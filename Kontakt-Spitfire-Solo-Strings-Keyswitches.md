@@ -16,6 +16,25 @@ The articulation names were checked against the Spitfire Solo Strings manual /
 official articulation inventory and the actual Kontakt UI screenshots supplied
 by the user.
 
+## Playable pitch ranges
+
+The Solo Strings manual itself does not present the same convenient low/high range
+table as some other Spitfire manuals.  A published Steinberg-forum report quotes a
+direct Spitfire support reply giving the Solo Strings ranges.  That reply used the
+older `middle C = C3` octave naming convention; converted to the convention used by
+SSO and this AI Tracker project (`middle C = C4`), the ranges are:
+
+| Instrument | Lowest | MIDI Note No. | Highest | MIDI Note No. |
+|---|---:|---:|---:|---:|
+| Violin (all three violin players) | G3 | 67 | C#7 | 109 |
+| Viola | C3 | 60 | F#6 | 102 |
+| Cello | C2 | 48 | Bb5 | 94 |
+| Bass | C1 | 36 | F#3 | 66 |
+
+Because the numeric ranges come from a relayed Spitfire support response rather than
+a printed range table in the Solo Strings manual, keep this provenance note with the
+data.  Individual articulations may have narrower ranges.
+
 ## Important
 
 - All values below are **raw MIDI Note Numbers**.
@@ -283,9 +302,9 @@ Spitfire's standard behavior for these Kontakt orchestral patches is:
 | Long Harmonics | CC1 | **CC21 does not work — confirmed** |
 | Long Progressive Vib | CC1 | **Do not add by default; vibrato is baked into the articulation** |
 | Long Sul Pont | CC1 | **CC21 does not work — confirmed** |
-| Long Tremolo | CC1 | Do not assume; verify |
-| Trill (Major 2nd) | CC1 | Do not assume; verify |
-| Trill (Minor 2nd) | CC1 | Do not assume; verify |
+| Long Tremolo | CC1 | N/A — do not generate CC21 vibrato automation |
+| Trill (Major 2nd) | CC1 | N/A — do not generate CC21 vibrato automation |
+| Trill (Minor 2nd) | CC1 | N/A — do not generate CC21 vibrato automation |
 | Short Staccato | Velocity | No practical use expected |
 | Short Spiccato | Velocity | No practical use expected |
 | Short Pizzicato | Velocity | No |

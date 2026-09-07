@@ -100,5 +100,16 @@ standalone app manually before AI Tracker is already running.
 - [MIDI.md](MIDI.md) — MIDI import/export and external MIDI routing
   (loopMIDI fallback for VST3 plugins that crash when hosted, e.g. Kontakt).
 - [Kontakt-Sacconi-Keyswitches.md](Kontakt-Sacconi-Keyswitches.md) — keyswitch
-  note numbers for the user's Spitfire Sacconi Quartet setup, so they don't
-  need to be re-derived from the manual each session.
+  note numbers for the user's Spitfire Sacconi Quartet setup (empirically
+  verified — see the file's own history note on why that mattered), so they
+  don't need to be re-derived from the manual each session.
+- [Kontakt-Spitfire-Solo-Strings-Keyswitches.md](Kontakt-Spitfire-Solo-Strings-Keyswitches.md) —
+  keyswitches for the six Solo Strings startup patches (screenshot-verified).
+- [Kontakt-Spitfire-Symphony-Orchestra-Keyswitches.md](Kontakt-Spitfire-Symphony-Orchestra-Keyswitches.md) —
+  keyswitches for SSO's factory All Techniques patches (strings, brass,
+  woodwinds, 2025 Solo Strings). **Factory-map derivation, not per-row
+  empirically verified** — confirm against the actual running instance
+  before relying on it, same caveat as the PP013 doc below.
+- [Kontakt-PP013-Electric-Cellist-Keyswitches.md](Kontakt-PP013-Electric-Cellist-Keyswitches.md) —
+  keyswitches and playable ranges for Peter Gregson Electric Cellist PP013,
+  checked against the user's running instance.

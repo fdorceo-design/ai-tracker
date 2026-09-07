@@ -23,6 +23,20 @@ relies on insertion order into the notes list, which is easy to get backwards
 by accident (e.g. generating keyswitches in a pass that runs after the
 melody notes).
 
+## Playable pitch ranges
+
+The Sacconi manual publishes the recorded range of each instrument:
+
+| Instrument | Lowest | MIDI Note No. | Highest | MIDI Note No. |
+|---|---:|---:|---:|---:|
+| Violin 1 | G3 | 67 | C7 | 108 |
+| Violin 2 | G3 | 67 | C7 | 108 |
+| Viola | C3 | 60 | C6 | 96 |
+| Cello | C2 | 48 | A4 | 81 |
+
+These are overall recorded instrument ranges.  Particular articulations may cover a
+smaller subset.
+
 ## All four instruments (same layout, verified for Violin 1)
 
 Violin 1, Violin 2, and Cello have all 14 rows; Viola has 12 (no trills).
@@ -70,6 +84,10 @@ MIDI 0-127). Unlike a keyswitch note, a CC value is *not* one-shot in effect
 it can be used for slow swells (multiple CC events ramping value over
 several beats) as well as a single static level per phrase.
 
+### Round-robin reset controls
+
+`Reset from` and `Reset on transport` belong to the **ROUND ROBINS** section. They reset round-robin sample cycling; they do **not** reset or select articulations.
+
 ## Articulation-specific performance controls
 
 For AI generation, do not treat all articulations as if they respond to the
@@ -96,10 +114,10 @@ General Spitfire behavior used here:
 | 7 | Marcato Attack | Velocity (attack) | No practical use expected |
 | 8 | Long Flautando | CC1 | **No — confirmed** |
 | 9 | Long Harmonics | CC1 | **No — confirmed** |
-| 10 | Unmeasured Tremolo | CC1 | Do not assume; verify |
-| 11 | Measured Tremolo (150 bpm) | CC1 | Do not assume; verify |
-| 12 | Trill Major 2nd | CC1 | Do not assume; verify |
-| 13 | Trill Minor 2nd | CC1 | Do not assume; verify |
+| 10 | Unmeasured Tremolo | CC1 | N/A — do not generate CC21 vibrato automation |
+| 11 | Measured Tremolo (150 bpm) | CC1 | N/A — do not generate CC21 vibrato automation |
+| 12 | Trill Major 2nd | CC1 | N/A — trill is the articulation |
+| 13 | Trill Minor 2nd | CC1 | N/A — trill is the articulation |
 
 ### AI rule
 
@@ -151,3 +169,7 @@ convention unconfirmed; treat as approximate, not used for keyswitch math)
   just never changed). The lesson: for a specific user's Kontakt rig,
   verify keyswitch numbers empirically (send a note, read the articulation
   label) rather than computing them from a stated octave-naming convention.
+
+## Verification status
+
+For the AI Tracker reference currently needed, **no further Sacconi listening test is required**. Keyswitches, overall instrument ranges, CC1/CC11 usage, and the musically relevant CC21 cases have been resolved.
