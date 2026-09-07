@@ -96,3 +96,13 @@ void Track::sendNoteOff(int channel, int noteNumber)
     }
     proxy.sendNoteOff(channel, noteNumber);
 }
+
+void Track::sendCC(int channel, int controllerNumber, int value)
+{
+    if (externalMidiOutput != nullptr)
+    {
+        externalMidiOutput->sendMessageNow(juce::MidiMessage::controllerEvent(channel, controllerNumber, value));
+        return;
+    }
+    proxy.sendCC(channel, controllerNumber, value);
+}

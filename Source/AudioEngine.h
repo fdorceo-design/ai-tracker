@@ -46,6 +46,7 @@ public:
 
     void sendNoteOn(int trackId, int channel, int noteNumber, float velocity);
     void sendNoteOff(int trackId, int channel, int noteNumber);
+    void sendCC(int trackId, int channel, int controllerNumber, int value);
 
     juce::AudioDeviceManager& getDeviceManager() { return deviceManager; }
 

@@ -79,11 +79,11 @@ void TrackerContentComponent::refreshTracks()
     // Shared bar layout: group every track's notes by bar, and size each
     // bar's band to the tallest track within it, so a track with fewer
     // notes in a given bar just leaves the rest of that band blank.
-    const int beatsPerBar = juce::jmax(1, sequencer.getBeatsPerBar());
+    // Bar indices account for any scheduled time-signature changes.
     std::map<int, std::map<int, int>> countPerBarPerTrack;
     for (const auto& n : sequencer.getNotes())
     {
-        const int bar = (int) std::floor(n.startBeat / (double) beatsPerBar);
+        const int bar = sequencer.getBarIndexForBeat(n.startBeat);
         countPerBarPerTrack[bar][n.trackId] += 1;
     }
 
@@ -106,7 +106,7 @@ void TrackerContentComponent::refreshTracks()
     const int notesAreaHeight = y;
 
     for (auto& e : eventLists)
-        e->applyBarLayout(barBands, beatsPerBar);
+        e->applyBarLayout(barBands);
 
     const int width = juce::jmax(1, (int) trackOrder.size()) * columnWidth;
     const int fixedHeaderPart = TrackEventListComponent::captionHeight + TrackEventListComponent::rowHeight;
@@ -157,8 +157,7 @@ int TrackerContentComponent::getYForBeat(double beat) const
     if (barBands.empty())
         return baseY;
 
-    const int beatsPerBar = juce::jmax(1, sequencer.getBeatsPerBar());
-    const int bar = (int) std::floor(beat / (double) beatsPerBar);
+    const int bar = sequencer.getBarIndexForBeat(beat);
 
     for (const auto& band : barBands)
         if (band.barIndex == bar)

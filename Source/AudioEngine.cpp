@@ -177,6 +177,13 @@ void AudioEngine::sendNoteOff(int trackId, int channel, int noteNumber)
         track->sendNoteOff(channel, noteNumber);
 }
 
+void AudioEngine::sendCC(int trackId, int channel, int controllerNumber, int value)
+{
+    const juce::ScopedLock lock(tracksLock);
+    if (auto* track = findTrack(trackId))
+        track->sendCC(channel, controllerNumber, value);
+}
+
 void AudioEngine::audioDeviceIOCallbackWithContext(const float* const* /*inputChannelData*/, int /*numInputChannels*/,
                                                     float* const* outputChannelData, int numOutputChannels,
                                                     int numSamples, const juce::AudioIODeviceCallbackContext&)

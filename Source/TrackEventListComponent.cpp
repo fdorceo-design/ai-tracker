@@ -29,7 +29,7 @@ void TrackEventListComponent::addNoteClicked(double lengthBeats)
     sequencer.addNote(trackId, 60, 0.8f, nextBeat, lengthBeats);
 }
 
-void TrackEventListComponent::applyBarLayout(const std::vector<BarBand>& bands, int beatsPerBar)
+void TrackEventListComponent::applyBarLayout(const std::vector<BarBand>& bands)
 {
     std::vector<SequencerNote> mine;
     for (const auto& n : sequencer.getNotes())
@@ -81,7 +81,7 @@ void TrackEventListComponent::applyBarLayout(const std::vector<BarBand>& bands, 
     for (size_t i = 0; i < rows.size(); ++i)
     {
         const auto& n = mine[i];
-        const int bar = (int) std::floor(n.startBeat / (double) beatsPerBar);
+        const int bar = sequencer.getBarIndexForBeat(n.startBeat);
 
         if (!haveCurrentBar || bar != currentBar)
         {

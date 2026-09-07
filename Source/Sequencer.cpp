@@ -112,6 +112,131 @@ std::vector<SequencerNote> Sequencer::getNotes() const
     return notes;
 }
 
+int Sequencer::addCC(int trackId, int controller, int value, double beat)
+{
+    std::lock_guard<std::mutex> lock(ccMutex);
+    SequencerCC cc;
+    cc.id = nextCcId++;
+    cc.trackId = trackId;
+    cc.controller = juce::jlimit(0, 127, controller);
+    cc.value = juce::jlimit(0, 127, value);
+    cc.beat = beat;
+    ccEvents.push_back(cc);
+    return cc.id;
+}
+
+bool Sequencer::removeCC(int id)
+{
+    std::lock_guard<std::mutex> lock(ccMutex);
+    auto it = std::find_if(ccEvents.begin(), ccEvents.end(), [id](const SequencerCC& c) { return c.id == id; });
+    if (it == ccEvents.end())
+        return false;
+    ccEvents.erase(it);
+    return true;
+}
+
+void Sequencer::clearCC()
+{
+    std::lock_guard<std::mutex> lock(ccMutex);
+    ccEvents.clear();
+}
+
+std::vector<SequencerCC> Sequencer::getCCEvents() const
+{
+    std::lock_guard<std::mutex> lock(ccMutex);
+    return ccEvents;
+}
+
+int Sequencer::addTempoEvent(double beat, double newBpm)
+{
+    std::lock_guard<std::mutex> lock(tempoMutex);
+    SequencerTempoEvent ev;
+    ev.id = nextTempoId++;
+    ev.beat = beat;
+    ev.bpm = juce::jmax(1.0, newBpm);
+    tempoEvents.push_back(ev);
+    return ev.id;
+}
+
+bool Sequencer::removeTempoEvent(int id)
+{
+    std::lock_guard<std::mutex> lock(tempoMutex);
+    auto it = std::find_if(tempoEvents.begin(), tempoEvents.end(), [id](const SequencerTempoEvent& e) { return e.id == id; });
+    if (it == tempoEvents.end())
+        return false;
+    tempoEvents.erase(it);
+    return true;
+}
+
+void Sequencer::clearTempoEvents()
+{
+    std::lock_guard<std::mutex> lock(tempoMutex);
+    tempoEvents.clear();
+}
+
+std::vector<SequencerTempoEvent> Sequencer::getTempoEvents() const
+{
+    std::lock_guard<std::mutex> lock(tempoMutex);
+    return tempoEvents;
+}
+
+int Sequencer::addTimeSigEvent(double beat, int newBeatsPerBar)
+{
+    std::lock_guard<std::mutex> lock(timeSigMutex);
+    SequencerTimeSigEvent ev;
+    ev.id = nextTimeSigId++;
+    ev.beat = beat;
+    ev.beatsPerBar = juce::jlimit(1, 32, newBeatsPerBar);
+    timeSigEvents.push_back(ev);
+    return ev.id;
+}
+
+bool Sequencer::removeTimeSigEvent(int id)
+{
+    std::lock_guard<std::mutex> lock(timeSigMutex);
+    auto it = std::find_if(timeSigEvents.begin(), timeSigEvents.end(), [id](const SequencerTimeSigEvent& e) { return e.id == id; });
+    if (it == timeSigEvents.end())
+        return false;
+    timeSigEvents.erase(it);
+    return true;
+}
+
+void Sequencer::clearTimeSigEvents()
+{
+    std::lock_guard<std::mutex> lock(timeSigMutex);
+    timeSigEvents.clear();
+}
+
+std::vector<SequencerTimeSigEvent> Sequencer::getTimeSigEvents() const
+{
+    std::lock_guard<std::mutex> lock(timeSigMutex);
+    return timeSigEvents;
+}
+
+int Sequencer::getBarIndexForBeat(double beat) const
+{
+    auto events = getTimeSigEvents();
+    std::sort(events.begin(), events.end(), [](const SequencerTimeSigEvent& a, const SequencerTimeSigEvent& b) { return a.beat < b.beat; });
+
+    int currentMeter = juce::jmax(1, beatsPerBar.load());
+    double segmentStart = 0.0;
+    int barsAccumulated = 0;
+
+    for (const auto& ev : events)
+    {
+        if (beat < ev.beat)
+            break;
+        const double segmentLength = ev.beat - segmentStart;
+        barsAccumulated += (int) std::round(segmentLength / currentMeter);
+        segmentStart = ev.beat;
+        currentMeter = juce::jmax(1, ev.beatsPerBar);
+    }
+
+    const double remaining = beat - segmentStart;
+    barsAccumulated += (int) std::floor(remaining / currentMeter);
+    return barsAccumulated;
+}
+
 void Sequencer::play()
 {
     if (playing.exchange(true))
@@ -211,6 +336,21 @@ void Sequencer::hiResTimerCallback()
         }
     }
 
+    const auto ccSnapshot = getCCEvents();
+    for (const auto& cc : ccSnapshot)
+    {
+        if (cc.beat >= prevPos && cc.beat < newPos)
+            engine.sendCC(cc.trackId, engine.getMidiChannel(cc.trackId), cc.controller, cc.value);
+    }
+
+    for (const auto& ev : getTempoEvents())
+        if (ev.beat >= prevPos && ev.beat < newPos)
+            bpm = juce::jmax(1.0, ev.bpm);
+
+    for (const auto& ev : getTimeSigEvents())
+        if (ev.beat >= prevPos && ev.beat < newPos)
+            beatsPerBar = juce::jlimit(1, 32, ev.beatsPerBar);
+
     if (loopEnabled && newPos >= loopEndBeat)
     {
         allNotesOff();
@@ -225,6 +365,11 @@ void Sequencer::hiResTimerCallback()
         {
             hasNotes = true;
             endBeat = juce::jmax(endBeat, n.startBeat + n.lengthBeats);
+        }
+        for (const auto& cc : ccSnapshot)
+        {
+            hasNotes = true;
+            endBeat = juce::jmax(endBeat, cc.beat);
         }
 
         if (hasNotes && newPos >= endBeat)

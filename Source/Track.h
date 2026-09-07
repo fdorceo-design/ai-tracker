@@ -58,6 +58,8 @@ public:
 
     void sendNoteOn(int channel, int noteNumber, float velocity);
     void sendNoteOff(int channel, int noteNumber);
+    // controllerNumber and value are both 0-127 (raw MIDI CC).
+    void sendCC(int channel, int controllerNumber, int value);
 
 private:
     int id;

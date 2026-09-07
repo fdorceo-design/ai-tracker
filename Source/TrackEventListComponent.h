@@ -23,7 +23,7 @@ public:
     // Reconciles rows against this track's current notes (matched by note
     // id, so an in-progress edit in an existing row survives) and places
     // each one at its bar's shared band offset.
-    void applyBarLayout(const std::vector<BarBand>& bands, int beatsPerBar);
+    void applyBarLayout(const std::vector<BarBand>& bands);
 
     void resized() override;
 

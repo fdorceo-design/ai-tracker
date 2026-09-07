@@ -27,12 +27,15 @@ articulation name label instead.
 
 ## Composition conventions
 
-- Beats are 0-indexed and bar lines are computed as
-  `floor(startBeat / beatsPerBar)`, so `startBeat: 0.0` sits in **bar index 0**
-  — the band above the *first* bar line in the tracker UI. Never place notes
-  at a negative `startBeat`: the sequencer only fires notes whose `startBeat`
-  is `>=` the current playback position, and playback starts at position 0.0,
-  so anything before that never triggers.
+- Beats are 0-indexed. Bar lines are normally `floor(startBeat / beatsPerBar)`,
+  but if any time-signature events are scheduled (see below), bar indices
+  follow the meter map instead — always trust `getBarIndexForBeat` / the
+  tracker UI's bar lines over a hand computation once a piece has a meter
+  change. `startBeat: 0.0` sits in **bar index 0** — the band above the
+  *first* bar line in the tracker UI. Never place notes at a negative
+  `startBeat`: the sequencer only fires notes whose `startBeat` is `>=` the
+  current playback position, and playback starts at position 0.0, so
+  anything before that never triggers.
 - **Bar index 0 is reserved for preparatory/setup data only** — articulation
   keyswitches, program changes, anything that needs to land before the music
   starts — never actual musical content. The composed piece itself begins at
@@ -48,6 +51,21 @@ articulation name label instead.
   note since they're a full bar apart.
 - Default: auto-generated pieces occupy bar 0 for setup only and start their
   actual music at bar 1. Don't add extra silent bars beyond that.
+
+## Expression: CC, tempo, and time-signature events
+
+- `POST /api/cc {trackId, controller, value, beat}` sends a one-shot MIDI CC
+  (0-127 controller and value). It has no duration — the value holds until
+  the next CC on that controller/track. Useful CCs on the Sacconi library:
+  CC1 dynamics, CC11 expression/overall volume, CC21 vibrato intensity. A
+  swell is just several CC events at increasing beats/values.
+- `POST /api/tempo-events {beat, bpm}` schedules a tempo change (rubato,
+  accelerando/ritardando as a step function — for a gradual change, place
+  several events close together). Not per-track; affects the whole piece.
+- `POST /api/timesig-events {beat, beatsPerBar}` schedules a meter change.
+  **Must land exactly on a bar boundary of the previously-active meter** —
+  the bar-index math assumes this and will misalign the tracker grid if not.
+- All three follow the same GET/DELETE/`.../clear` pattern as `/api/notes`.
 
 ## Reference docs
 

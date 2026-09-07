@@ -1,4 +1,4 @@
-# Spitfire Sacconi String Quartet — Keyswitch Reference
+# Spitfire Sacconi String Quartet — Keyswitch & CC Reference
 
 Individual-patch keyswitch layout, empirically verified against the user's
 actual Kontakt Standalone setup (Sacconi Quartet library, one instrument per
@@ -45,6 +45,23 @@ Violin 1, Violin 2, and Cello have all 14 rows; Viola has 12 (no trills).
 | Staccato | 1 |
 | Spiccato | 0 |
 | Pizzicato | 2 |
+
+## Continuous controllers (expression/nuance)
+
+Confirmed by the user; each instrument's CONTROLLERS panel in the GUI
+(Dynamics/Vibrato/Release/Expression sliders) maps to these:
+
+| CC | Name | Effect |
+|---|---|---|
+| 1  | Mod wheel | Dynamics (soft↔loud within the current articulation) |
+| 11 | Expression | Overall volume (0-100%) |
+| 21 | Vibrato | Vibrato intensity |
+
+Send via `POST /api/cc {trackId, controller, value, beat}` (`value` is raw
+MIDI 0-127). Unlike a keyswitch note, a CC value is *not* one-shot in effect
+— it stays at that value until the next CC on the same controller/track, so
+it can be used for slow swells (multiple CC events ramping value over
+several beats) as well as a single static level per phrase.
 
 ## Kontakt UI notes learned along the way
 

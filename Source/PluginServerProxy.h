@@ -40,6 +40,7 @@ public:
 
     void sendNoteOn(int channel, int noteNumber, float velocity);
     void sendNoteOff(int channel, int noteNumber);
+    void sendCC(int channel, int controllerNumber, int value);
 
     // Audio-thread only. Adds (does not clear) into outputBuffer.
     void renderNextBlock(juce::AudioBuffer<float>& outputBuffer, int numSamples);

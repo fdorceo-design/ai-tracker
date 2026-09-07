@@ -21,6 +21,39 @@ struct SequencerNote
     double lengthBeats = 1.0;
 };
 
+// A one-shot MIDI CC (e.g. CC1 mod wheel/dynamics, CC11 expression,
+// CC21 vibrato on the Sacconi library) fired at a given beat. Unlike a
+// note there's no "off" -- the value just stays until the next CC on that
+// controller/track.
+struct SequencerCC
+{
+    int id = 0;
+    int trackId = 0;
+    int controller = 1; // raw MIDI CC number, 0-127
+    int value = 0;      // raw MIDI CC value, 0-127
+    double beat = 0.0;
+};
+
+// A scheduled tempo change. Not per-track -- affects the whole sequencer's
+// playback speed from this beat onward, until the next tempo event (or none).
+struct SequencerTempoEvent
+{
+    int id = 0;
+    double beat = 0.0;
+    double bpm = 120.0;
+};
+
+// A scheduled time-signature change. Assumed to land exactly on a bar
+// boundary of whatever meter was active before it -- bar-index math (for
+// the tracker grid's bar lines) walks the events in order and accumulates
+// completed bars per segment, so a change placed mid-bar will misalign.
+struct SequencerTimeSigEvent
+{
+    int id = 0;
+    double beat = 0.0;
+    int beatsPerBar = 4;
+};
+
 class Sequencer : private juce::HighResolutionTimer
 {
 public:
@@ -35,6 +68,26 @@ public:
     bool setNoteVelocity(int id, float newVelocity);
     void clearNotes();
     std::vector<SequencerNote> getNotes() const;
+
+    int addCC(int trackId, int controller, int value, double beat);
+    bool removeCC(int id);
+    void clearCC();
+    std::vector<SequencerCC> getCCEvents() const;
+
+    int addTempoEvent(double beat, double bpm);
+    bool removeTempoEvent(int id);
+    void clearTempoEvents();
+    std::vector<SequencerTempoEvent> getTempoEvents() const;
+
+    int addTimeSigEvent(double beat, int beatsPerBar);
+    bool removeTimeSigEvent(int id);
+    void clearTimeSigEvents();
+    std::vector<SequencerTimeSigEvent> getTimeSigEvents() const;
+
+    // Bar index for a beat, accounting for any scheduled time-signature
+    // changes (see SequencerTimeSigEvent). Used for the tracker grid's bar
+    // lines so they stay correct across a meter change.
+    int getBarIndexForBeat(double beat) const;
 
     void play();
     void stop();
@@ -83,6 +136,18 @@ private:
     mutable std::mutex noteMutex;
     std::vector<SequencerNote> notes;
     int nextId = 1;
+
+    mutable std::mutex ccMutex;
+    std::vector<SequencerCC> ccEvents;
+    int nextCcId = 1;
+
+    mutable std::mutex tempoMutex;
+    std::vector<SequencerTempoEvent> tempoEvents;
+    int nextTempoId = 1;
+
+    mutable std::mutex timeSigMutex;
+    std::vector<SequencerTimeSigEvent> timeSigEvents;
+    int nextTimeSigId = 1;
 
     std::atomic<bool> playing { false };
     std::atomic<double> bpm { 120.0 };

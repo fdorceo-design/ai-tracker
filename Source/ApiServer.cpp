@@ -17,6 +17,35 @@ namespace
         return juce::var(obj);
     }
 
+    juce::var ccToVar(const SequencerCC& c)
+    {
+        auto* obj = new juce::DynamicObject();
+        obj->setProperty("id", c.id);
+        obj->setProperty("trackId", c.trackId);
+        obj->setProperty("controller", c.controller);
+        obj->setProperty("value", c.value);
+        obj->setProperty("beat", c.beat);
+        return juce::var(obj);
+    }
+
+    juce::var tempoEventToVar(const SequencerTempoEvent& e)
+    {
+        auto* obj = new juce::DynamicObject();
+        obj->setProperty("id", e.id);
+        obj->setProperty("beat", e.beat);
+        obj->setProperty("bpm", e.bpm);
+        return juce::var(obj);
+    }
+
+    juce::var timeSigEventToVar(const SequencerTimeSigEvent& e)
+    {
+        auto* obj = new juce::DynamicObject();
+        obj->setProperty("id", e.id);
+        obj->setProperty("beat", e.beat);
+        obj->setProperty("beatsPerBar", e.beatsPerBar);
+        return juce::var(obj);
+    }
+
     void sendJson(httplib::Response& res, const juce::var& v, int status = 200)
     {
         res.status = status;
@@ -274,6 +303,138 @@ bool ApiServer::start(int portToUse)
     server->Post("/api/notes/clear", [this](const httplib::Request&, httplib::Response& res)
     {
         sequencer.clearNotes();
+        sendOk(res, true);
+    });
+
+    server->Get("/api/cc", [this](const httplib::Request&, httplib::Response& res)
+    {
+        juce::Array<juce::var> arr;
+        for (const auto& c : sequencer.getCCEvents())
+            arr.add(ccToVar(c));
+        sendJson(res, juce::var(arr));
+    });
+
+    server->Post("/api/cc", [this](const httplib::Request& req, httplib::Response& res)
+    {
+        auto parsed = juce::JSON::parse(juce::String(req.body));
+        if (!parsed.isObject())
+        {
+            auto* obj = new juce::DynamicObject();
+            obj->setProperty("error", "invalid json body");
+            sendJson(res, juce::var(obj), 400);
+            return;
+        }
+
+        const int trackId = (int) parsed.getProperty("trackId", 0);
+        const auto knownTracks = engine.getTrackIds();
+        if (std::find(knownTracks.begin(), knownTracks.end(), trackId) == knownTracks.end())
+        {
+            auto* obj = new juce::DynamicObject();
+            obj->setProperty("error", "unknown trackId");
+            sendJson(res, juce::var(obj), 400);
+            return;
+        }
+
+        const int controller = (int) parsed.getProperty("controller", 1);
+        const int value = (int) parsed.getProperty("value", 0);
+        const double beat = (double) parsed.getProperty("beat", 0.0);
+
+        const int id = sequencer.addCC(trackId, controller, value, beat);
+
+        auto* obj = new juce::DynamicObject();
+        obj->setProperty("id", id);
+        sendJson(res, juce::var(obj), 201);
+    });
+
+    server->Delete(R"(/api/cc/(\d+))", [this](const httplib::Request& req, httplib::Response& res)
+    {
+        const int id = std::stoi(req.matches[1].str());
+        sendOk(res, sequencer.removeCC(id));
+    });
+
+    server->Post("/api/cc/clear", [this](const httplib::Request&, httplib::Response& res)
+    {
+        sequencer.clearCC();
+        sendOk(res, true);
+    });
+
+    server->Get("/api/tempo-events", [this](const httplib::Request&, httplib::Response& res)
+    {
+        juce::Array<juce::var> arr;
+        for (const auto& e : sequencer.getTempoEvents())
+            arr.add(tempoEventToVar(e));
+        sendJson(res, juce::var(arr));
+    });
+
+    server->Post("/api/tempo-events", [this](const httplib::Request& req, httplib::Response& res)
+    {
+        auto parsed = juce::JSON::parse(juce::String(req.body));
+        if (!parsed.isObject())
+        {
+            auto* obj = new juce::DynamicObject();
+            obj->setProperty("error", "invalid json body");
+            sendJson(res, juce::var(obj), 400);
+            return;
+        }
+
+        const double beat = (double) parsed.getProperty("beat", 0.0);
+        const double newBpm = (double) parsed.getProperty("bpm", 120.0);
+        const int id = sequencer.addTempoEvent(beat, newBpm);
+
+        auto* obj = new juce::DynamicObject();
+        obj->setProperty("id", id);
+        sendJson(res, juce::var(obj), 201);
+    });
+
+    server->Delete(R"(/api/tempo-events/(\d+))", [this](const httplib::Request& req, httplib::Response& res)
+    {
+        const int id = std::stoi(req.matches[1].str());
+        sendOk(res, sequencer.removeTempoEvent(id));
+    });
+
+    server->Post("/api/tempo-events/clear", [this](const httplib::Request&, httplib::Response& res)
+    {
+        sequencer.clearTempoEvents();
+        sendOk(res, true);
+    });
+
+    server->Get("/api/timesig-events", [this](const httplib::Request&, httplib::Response& res)
+    {
+        juce::Array<juce::var> arr;
+        for (const auto& e : sequencer.getTimeSigEvents())
+            arr.add(timeSigEventToVar(e));
+        sendJson(res, juce::var(arr));
+    });
+
+    server->Post("/api/timesig-events", [this](const httplib::Request& req, httplib::Response& res)
+    {
+        auto parsed = juce::JSON::parse(juce::String(req.body));
+        if (!parsed.isObject())
+        {
+            auto* obj = new juce::DynamicObject();
+            obj->setProperty("error", "invalid json body");
+            sendJson(res, juce::var(obj), 400);
+            return;
+        }
+
+        const double beat = (double) parsed.getProperty("beat", 0.0);
+        const int newBeatsPerBar = (int) parsed.getProperty("beatsPerBar", 4);
+        const int id = sequencer.addTimeSigEvent(beat, newBeatsPerBar);
+
+        auto* obj = new juce::DynamicObject();
+        obj->setProperty("id", id);
+        sendJson(res, juce::var(obj), 201);
+    });
+
+    server->Delete(R"(/api/timesig-events/(\d+))", [this](const httplib::Request& req, httplib::Response& res)
+    {
+        const int id = std::stoi(req.matches[1].str());
+        sendOk(res, sequencer.removeTimeSigEvent(id));
+    });
+
+    server->Post("/api/timesig-events/clear", [this](const httplib::Request&, httplib::Response& res)
+    {
+        sequencer.clearTimeSigEvents();
         sendOk(res, true);
     });
 

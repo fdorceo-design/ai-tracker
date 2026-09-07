@@ -223,6 +223,12 @@ void PluginServerProxy::sendNoteOff(int channel, int noteNumber)
     pendingMidi.addEvent(juce::MidiMessage::noteOff(channel, noteNumber), 0);
 }
 
+void PluginServerProxy::sendCC(int channel, int controllerNumber, int value)
+{
+    const juce::ScopedLock lock(midiLock);
+    pendingMidi.addEvent(juce::MidiMessage::controllerEvent(channel, controllerNumber, value), 0);
+}
+
 void PluginServerProxy::renderNextBlock(juce::AudioBuffer<float>& outputBuffer, int numSamples)
 {
     if (!loaded.load() || connection == nullptr || !connection->isConnected())
