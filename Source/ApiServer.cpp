@@ -62,6 +62,7 @@ bool ApiServer::start(int portToUse)
             t->setProperty("name", engine.getTrackName(id));
             t->setProperty("pluginLoaded", engine.isPluginLoaded(id));
             t->setProperty("pluginName", engine.getPluginName(id));
+            t->setProperty("midiChannel", engine.getMidiChannel(id));
             trackArr.add(juce::var(t));
         }
         obj->setProperty("tracks", trackArr);
@@ -86,6 +87,7 @@ bool ApiServer::start(int portToUse)
             t->setProperty("name", engine.getTrackName(id));
             t->setProperty("pluginLoaded", engine.isPluginLoaded(id));
             t->setProperty("pluginName", engine.getPluginName(id));
+            t->setProperty("midiChannel", engine.getMidiChannel(id));
             arr.add(juce::var(t));
         }
         sendJson(res, juce::var(arr));
@@ -116,6 +118,18 @@ bool ApiServer::start(int portToUse)
         auto name = parsed.getProperty("name", "").toString().trim();
         if (name.isEmpty()) { sendOk(res, false, 200, 400); return; }
         sendOk(res, engine.setTrackName(std::stoi(req.matches[1].str()), name));
+    });
+
+    server->Post(R"(/api/tracks/(\d+)/midi-channel)", [this](const httplib::Request& req, httplib::Response& res)
+    {
+        auto parsed = juce::JSON::parse(juce::String(req.body));
+        const int channel = (int) parsed.getProperty("channel", 1);
+        const int trackId = std::stoi(req.matches[1].str());
+        const bool ok = engine.setMidiChannel(trackId, channel);
+        auto* obj = new juce::DynamicObject();
+        obj->setProperty("ok", ok);
+        if (ok) obj->setProperty("channel", engine.getMidiChannel(trackId));
+        sendJson(res, juce::var(obj), ok ? 200 : 404);
     });
 
     server->Post(R"(/api/tracks/(\d+)/plugin/load)", [this](const httplib::Request& req, httplib::Response& res)

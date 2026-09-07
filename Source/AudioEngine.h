@@ -19,6 +19,8 @@ public:
     std::vector<int> getTrackIds() const;
     juce::String getTrackName(int trackId);
     bool setTrackName(int trackId, juce::String name);
+    int getMidiChannel(int trackId);
+    bool setMidiChannel(int trackId, int channel);
     juce::String getPluginPath(int trackId);
     void setInstrumentIdentity(int trackId, juce::String name, juce::String path);
 

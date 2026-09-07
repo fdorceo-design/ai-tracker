@@ -27,6 +27,7 @@ private:
     juce::TextButton editorButton{"Editor"};
     juce::TextButton removeButton{"Remove"};
     juce::Label statusLabel;
+    juce::Label channelLabel;
 
     std::unique_ptr<juce::FileChooser> fileChooser;
 };

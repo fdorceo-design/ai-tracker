@@ -22,6 +22,12 @@ public:
     juce::String getName() const { return name; }
     void setName(juce::String value) { name = std::move(value); }
     juce::String getPluginPath() const { return pluginPath; }
+
+    // 1-16. Lets several tracks share one external MIDI device/port (e.g.
+    // one multitimbral standalone instance with 16 slots, each on its own
+    // channel) and stay addressable independently.
+    int getMidiChannel() const { return midiChannel; }
+    void setMidiChannel(int channel) { midiChannel = juce::jlimit(1, 16, channel); }
     void setInstrumentIdentity(juce::String label, juce::String path)
     {
         instrumentName = std::move(label);
@@ -60,6 +66,7 @@ private:
     PluginServerProxy proxy;
     std::unique_ptr<juce::MidiOutput> externalMidiOutput;
     juce::String externalMidiDeviceName;
+    int midiChannel = 1;
     double currentSampleRate = 44100.0;
     int currentBlockSize = 512;
 };

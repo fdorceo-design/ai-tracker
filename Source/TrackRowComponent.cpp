@@ -29,12 +29,28 @@ TrackRowComponent::TrackRowComponent(AudioEngine& engineIn, int trackIdIn, std::
     statusLabel.setFont(juce::Font(juce::FontOptions(11.0f)));
     statusLabel.setMinimumHorizontalScale(1.0f);
     addAndMakeVisible(statusLabel);
+
+    channelLabel.setText("Ch " + juce::String(engine.getMidiChannel(trackId)), juce::dontSendNotification);
+    channelLabel.setJustificationType(juce::Justification::centred);
+    channelLabel.setFont(juce::Font(juce::FontOptions(12.0f)));
+    channelLabel.setEditable(false, true, false);
+    channelLabel.setColour(juce::Label::backgroundColourId, juce::Colour(0xff306230).withAlpha(0.6f));
+    channelLabel.onTextChange = [this]
+    {
+        const auto digits = channelLabel.getText().retainCharacters("0123456789");
+        if (digits.isNotEmpty())
+            engine.setMidiChannel(trackId, digits.getIntValue());
+        channelLabel.setText("Ch " + juce::String(engine.getMidiChannel(trackId)), juce::dontSendNotification);
+    };
+    addAndMakeVisible(channelLabel);
 }
 
 void TrackRowComponent::resized()
 {
     auto area = getLocalBounds().reduced(3);
     nameLabel.setBounds(area.removeFromTop(36));
+    area.removeFromTop(2);
+    channelLabel.setBounds(area.removeFromTop(16));
     area.removeFromTop(2);
     statusLabel.setBounds(area.removeFromTop(28));
     area.removeFromTop(2);
@@ -104,6 +120,8 @@ void TrackRowComponent::toMidiClicked()
 void TrackRowComponent::refreshStatus()
 {
     nameLabel.setText(engine.getTrackName(trackId), juce::dontSendNotification);
+    if (channelLabel.getCurrentTextEditor() == nullptr)
+        channelLabel.setText("Ch " + juce::String(engine.getMidiChannel(trackId)), juce::dontSendNotification);
     if (engine.isPluginLoaded(trackId))
     {
         statusLabel.setText("Loaded: " + engine.getPluginName(trackId), juce::dontSendNotification);

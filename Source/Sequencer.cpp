@@ -152,7 +152,7 @@ void Sequencer::allNotesOff()
     {
         auto it = std::find_if(snapshot.begin(), snapshot.end(), [id](const SequencerNote& n) { return n.id == id; });
         if (it != snapshot.end())
-            engine.sendNoteOff(it->trackId, 1, it->pitch);
+            engine.sendNoteOff(it->trackId, engine.getMidiChannel(it->trackId), it->pitch);
     }
     soundingNoteIds.clear();
 }
@@ -178,12 +178,12 @@ void Sequencer::hiResTimerCallback()
 
         if (startsInWindow)
         {
-            engine.sendNoteOn(n.trackId, 1, n.pitch, n.velocity);
+            engine.sendNoteOn(n.trackId, engine.getMidiChannel(n.trackId), n.pitch, n.velocity);
             soundingNoteIds.insert(n.id);
         }
         if (endsInWindow && soundingNoteIds.count(n.id) > 0)
         {
-            engine.sendNoteOff(n.trackId, 1, n.pitch);
+            engine.sendNoteOff(n.trackId, engine.getMidiChannel(n.trackId), n.pitch);
             soundingNoteIds.erase(n.id);
         }
     }

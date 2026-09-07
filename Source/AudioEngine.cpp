@@ -88,6 +88,20 @@ bool AudioEngine::setTrackName(int trackId, juce::String name)
     return false;
 }
 
+int AudioEngine::getMidiChannel(int trackId)
+{
+    const juce::ScopedLock lock(tracksLock);
+    auto* track = findTrack(trackId);
+    return track != nullptr ? track->getMidiChannel() : 1;
+}
+
+bool AudioEngine::setMidiChannel(int trackId, int channel)
+{
+    const juce::ScopedLock lock(tracksLock);
+    if (auto* track = findTrack(trackId)) { track->setMidiChannel(channel); return true; }
+    return false;
+}
+
 juce::String AudioEngine::getPluginPath(int trackId)
 {
     const juce::ScopedLock lock(tracksLock);

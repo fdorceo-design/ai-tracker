@@ -27,7 +27,7 @@ public:
     void paintOverChildren(juce::Graphics& g) override;
 
 private:
-    static constexpr int headerHeight = 134;
+    static constexpr int headerHeight = 152;
     static constexpr int columnWidth = 280;
 
     AudioEngine& engine;
