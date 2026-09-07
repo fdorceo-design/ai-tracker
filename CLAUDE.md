@@ -2,19 +2,27 @@
 
 ## Composition conventions
 
-- Beats are 0-indexed: `startBeat: 0.0` is beat 1 of **measure 1**. There is
-  no "measure 0" — never place notes (or keyswitch-priming notes) at a
-  negative `startBeat` to sneak them in "before" the piece starts; the
-  sequencer only fires notes whose `startBeat` is `>= ` the current playback
-  position, and playback starts at position 0.0, so anything before that
-  never triggers.
-- When a track needs an articulation keyswitch primed before its first
-  melodic note (see [Kontakt-Sacconi-Keyswitches.md](Kontakt-Sacconi-Keyswitches.md)),
-  put the keyswitch at `startBeat: 0.0` with a very short `lengthBeats`
-  (e.g. `0.02`), and start the actual melodic content a little after it
-  (e.g. `startBeat: 0.05` onward) — still within measure 1, not before it.
-- Default: auto-generated pieces begin at measure 1, beat 0.0. Don't add
-  silent lead-in measures unless the user asks for one.
+- Beats are 0-indexed and bar lines are computed as
+  `floor(startBeat / beatsPerBar)`, so `startBeat: 0.0` sits in **bar index 0**
+  — the band above the *first* bar line in the tracker UI. Never place notes
+  at a negative `startBeat`: the sequencer only fires notes whose `startBeat`
+  is `>=` the current playback position, and playback starts at position 0.0,
+  so anything before that never triggers.
+- **Bar index 0 is reserved for preparatory/setup data only** — articulation
+  keyswitches, program changes, anything that needs to land before the music
+  starts — never actual musical content. The composed piece itself begins at
+  **bar index 1** (`startBeat: beatsPerBar`, e.g. `4.0` in 4/4), i.e. right at
+  the *first* bar line, matching a non-anacrusis piece's true beat 1 with no
+  ambiguity. (A piece with a written pickup/anacrusis is the one exception —
+  place its pickup notes at the end of bar 0, immediately before the
+  bar-1 downbeat, not spread across bar 0.)
+- When a track needs an articulation keyswitch (see
+  [Kontakt-Sacconi-Keyswitches.md](Kontakt-Sacconi-Keyswitches.md)), add it as
+  a short note early in bar 0 (e.g. `startBeat: 0.0`, `lengthBeats: 1.0` is
+  plenty of room) — it never needs to compete for timing with bar 1's first
+  note since they're a full bar apart.
+- Default: auto-generated pieces occupy bar 0 for setup only and start their
+  actual music at bar 1. Don't add extra silent bars beyond that.
 
 ## Reference docs
 
