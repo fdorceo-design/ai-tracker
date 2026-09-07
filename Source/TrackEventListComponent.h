@@ -25,6 +25,12 @@ public:
     // each one at its bar's shared band offset.
     void applyBarLayout(const std::vector<BarBand>& bands);
 
+    // Lightweight per-tick pass for playback: just updates which row (if
+    // any) is under the playhead, using each row's own cached note data --
+    // no note-list copy, sort, or row rebuild. Safe to call every frame
+    // during playback without the cost of applyBarLayout.
+    void updateHighlights();
+
     void resized() override;
 
 private:

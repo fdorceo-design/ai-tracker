@@ -77,17 +77,22 @@ void TrackerContentComponent::refreshTracks()
     const bool tracksChanged = (ids != trackOrder);
     trackOrder = ids;
 
-    // The rest of this function -- rebuilding the bar-band layout and every
+    // The bulk of this function -- rebuilding the bar-band layout and every
     // track's note rows -- is O(total notes) and was previously done
-    // unconditionally on every 10Hz timer tick. Skip it when nothing that
-    // would change its output has happened since last time (still always
-    // runs while playing, since the playhead/highlighted-row state needs
-    // to keep advancing). This used to be cheap enough not to matter, but
-    // competing with the flood of paint/resize messages during a live
-    // window resize was enough to make the whole app appear to hang.
+    // unconditionally on every 10Hz timer tick, including throughout
+    // playback (since isPlaying() used to force it every time, for the
+    // playhead/highlighted-row state). That made a real difference once a
+    // piece had a few hundred notes: the GUI became unresponsive to clicks
+    // for the whole time something was playing. Skip the heavy rebuild
+    // whenever nothing that would change its output has happened since
+    // last time, playing or not; a separate lightweight pass below (using
+    // each row's own cached data, no note-list copy/sort/rebuild) keeps the
+    // playhead and highlighted row moving during playback regardless.
     const uint64_t currentRevision = sequencer.getRevision();
-    if (!tracksChanged && currentRevision == lastSequencerRevision && !sequencer.isPlaying())
-        return;
+    const bool needsHeavyRefresh = tracksChanged || currentRevision != lastSequencerRevision;
+
+    if (needsHeavyRefresh)
+    {
     lastSequencerRevision = currentRevision;
 
     // Shared bar layout: group every track's notes by bar, and size each
@@ -133,6 +138,14 @@ void TrackerContentComponent::refreshTracks()
     // without changing this component's overall size or any child's
     // bounds, which would otherwise leave stale lines on screen.
     repaint();
+    } // needsHeavyRefresh
+
+    // Cheap regardless of whether the heavy rebuild ran above: keeps the
+    // highlighted row and playhead line moving during playback.
+    for (auto& e : eventLists)
+        e->updateHighlights();
+    if (sequencer.isPlaying())
+        repaint();
 }
 
 void TrackerContentComponent::resized()

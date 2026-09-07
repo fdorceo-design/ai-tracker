@@ -19,6 +19,10 @@ public:
     // only appears once per bar instead of repeating on every row.
     void refresh(const SequencerNote& note, int barIndex, bool showBarNumber);
     void setHighlighted(bool shouldHighlight);
+    // For a lightweight per-tick highlight-only pass during playback, so
+    // that doesn't require re-walking/re-sorting every track's notes (see
+    // TrackEventListComponent::updateHighlights).
+    const SequencerNote& getCachedNote() const { return cachedNote; }
 
     void paint(juce::Graphics& g) override;
     void resized() override;

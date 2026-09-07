@@ -126,6 +126,17 @@ void TrackEventListComponent::applyBarLayout(const std::vector<BarBand>& bands)
     resized();
 }
 
+void TrackEventListComponent::updateHighlights()
+{
+    const bool playing = sequencer.isPlaying();
+    const double pos = sequencer.getPositionBeats();
+    for (auto& row : rows)
+    {
+        const auto& n = row->getCachedNote();
+        row->setHighlighted(playing && pos >= n.startBeat && pos < n.startBeat + n.lengthBeats);
+    }
+}
+
 void TrackEventListComponent::resized()
 {
     captionLabel.setBounds(0, 0, getWidth(), captionHeight);
