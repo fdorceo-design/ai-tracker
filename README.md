@@ -134,3 +134,10 @@ permitted with attribution.
     from the supplied SFZ; the rest are left unset rather than inferred
     when the SFZ delegates to a missing include file. Uses `C4 = MIDI 60`.
     (Karoryfer Samplesの音源。Commercial/Free/Other_or_Legacyに分類。AI Trackerに必要な情報(演奏可能音域、キースイッチ→奏法対応、CC/モジュールホイールの挙動)のみに意図的に絞っています — 一部製品はSFZから直接音域を確認できたため**SFZ verified**と明記、それ以外はSFZが外部includeファイルに委譲していて確認できない場合は推測せず未設定のままにしています。`C4 = MIDI 60` 表記を使用。)
+  - [HAVE-Audio-Keyswitches/](HAVE-Audio-Keyswitches/README.md) — HAVE
+    Audio Kontakt libraries (23 products; duplicate wrapper bundles
+    excluded). Scope is deliberately narrow, same as Karoryfer: exact
+    keyswitch note numbers only when officially published, no
+    mixer/reverb/mic detail unless it affects what MIDI event to
+    generate.
+    (HAVE AudioのKontakt音源(23種、重複するラッパー的バンドルは除外)。Karoryferと同様、意図的に狭いスコープ — キースイッチ番号は公式に明記されている場合のみ記載し、生成すべきMIDIイベントに関係しないミキサー/リバーブ/マイク情報は含めません。)

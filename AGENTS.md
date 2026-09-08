@@ -177,3 +177,10 @@ standalone app manually before AI Tracker is already running.
   to a missing `#include` mapping file, the range is left unset rather
   than guessed — treat an unset range as genuinely unknown, not as an
   oversight to fill in.
+- [HAVE-Audio-Keyswitches/](HAVE-Audio-Keyswitches/README.md) — HAVE
+  Audio Kontakt libraries (23 products). Same narrow-scope, don't-guess
+  policy as Karoryfer above. A few entries (Rebec, Nordic Cello, Nordisk
+  Kontrabass) were upgraded from the user's actual product files/manuals
+  with exact keyswitch maps and confirmed CC1/velocity behavior — those
+  are more trustworthy than the rest of the set, which mostly records
+  articulation/trigger-bank names without exact note numbers.
